@@ -1,0 +1,976 @@
+const
+  eZTagButton=1;
+  eZTagCheckbox=2;
+  eZTagCombobox=3;
+  eZTagEdit=4;
+  eZTagGroupbox=5;
+  eZTagImage=6;
+  eZTagLabel=7;
+  eZTagListBox=8;
+  eZTagMemo=9;
+  eZTagRadioButton=10;
+
+type tZProp=(eZPropChecked,eZPropDisabled,ezPropReadOnly,eZPropVisible);
+
+type tZComponent=record
+  __:tComponent;
+end;
+
+type tZComponentArray=array of tZComponent;
+
+type tZForm=record
+  __:tForm;
+end;
+
+var
+  eZForm:tZForm;
+  ezFormComponentArray:tZComponentArray;
+
+procedure pzFormFree();
+begin ezForm.__.close();end;
+
+procedure pZFormShow();native;
+begin eZForm.__.showOnTop();end;
+
+function tObject.toComponent():tZComponent;
+begin exit(tZComponent(self));end;
+
+(*
+  tZForm Methods
+*)
+
+function tZForm.addButton(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('button',vCaption,vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
+
+function tZForm.addCheckbox(vCaption,vFont,vHandle:string;vPosition:tPoint;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('checkbox',vCaption,vFont,vHandle,vPosition,[0,0],@vEventHandler));end;
+
+function tZForm.addCombobox(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('combobox',vCaption,vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
+
+function tZForm.addEdit(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('edit',vCaption,vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
+
+function tZForm.addGroupbox(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32):tZComponent;
+begin exit(self.addComponent('groupbox',vCaption,vFont,vHandle,vPosition,vDimensions,nil));end;
+
+function tZForm.addImage(vFilePath,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('image',vFilePath,'',vHandle,vPosition,vDimensions,@vEventHandler));end;
+
+function tZForm.addLabel(vCaption,vFont,vHandle:string;vPosition:tPoint):tZComponent;
+begin exit(self.addComponent('label',vCaption,vFont,vHandle,vPosition,[0,0],nil));end;
+
+function tZForm.addListbox(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('listbox',vCaption,vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
+
+function tZForm.addMemo(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('memo',vCaption,vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
+
+function tZForm.addRadioButton(vCaption,vFont,vHandle:string;vPosition:tPoint;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('radiobutton',vCaption,vFont,vHandle,vPosition,[0,0],@vEventHandler));end;
+
+function tZForm.addComponent(vComponent,vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
+var
+  _Component,
+    _Temporary:tComponent;
+  _Font:tFont;
+  _FontColor,
+    _FontSize,
+    _Index:int32;
+  _FontStyle:tFontStyles;
+  _ListArray:tStringArray;
+  _Picture:tPicture;
+begin
+  if vFont<>'' then
+  begin
+    with _Font do
+    begin
+      init();
+      if execRegExpr('(?i).*\bc(\d+)\b.*',vFont) then
+      begin
+        _FontColor:=strToInt(replaceRegExpr('(?i).*\bc(\d+)\b.*',vFont,'$1',true));
+        setColor(_FontColor);
+      end;
+      if execRegExpr('(?i).*\bs(\d+)\b.*',vFont) then
+      begin
+        _FontSize:=strToInt(replaceRegExpr('(?i).*\bs(\d+)\b.*',vFont,'$1',true));
+        setSize(_FontSize);
+      end;
+      if execRegExpr('(?i)\bb\b|bold',vFont) then
+        _FontStyle:=[0];
+      if execRegExpr('(?i)\bi\b|italic',vFont) then
+        _FontStyle:=_FontStyle+[1];
+      if execRegExpr('(?i)\bs\b|strikeout',vFont) then
+        _FontStyle:=_FontStyle+[2];
+      if execRegExpr('(?i)\bu\b|underline',vFont) then
+        _FontStyle:=_FontStyle+[3];
+      setStyle(_FontStyle);
+    end;
+  end;
+  case vComponent of
+    'button':
+      with tButton(_Component) do
+      begin
+        init(self.__);
+        setCaption(replaceRegExpr('^$',vCaption,#0,false));
+        if _Font then
+          setFont(_Font);
+        if vDimensions[1] then
+          setHeight(vDimensions[1]);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        setOnClick(@vEventHandler);
+        setParent(self.__);
+        setTag(eZTagButton);
+        setTop(vPosition.y);
+        if vDimensions[0] then
+          setWidth(vDimensions[0]);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+    'checkbox':
+      with tCheckbox(_Component) do
+      begin
+        init(self.__);
+        setCaption(replaceRegExpr('^$',vCaption,#0,false));
+        if _Font then
+          setFont(_Font);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        setOnChange(@vEventHandler);
+        setParent(self.__);
+        setTag(eZTagCheckbox);
+        setTop(vPosition.y);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+    'combobox':
+      with tCombobox(_Component) do
+      begin
+        init(self.__);
+        _ListArray:=explode('|',vCaption);
+        for _Index to high(_ListArray) do
+          addItem(_ListArray[_Index],nil);
+        setArrowKeysTraverseList(true);
+        if _Font then
+          setFont(_Font);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        if length(_ListArray) then
+          setItemIndex(0);
+        setParent(self.__);
+        tCombobox(_Component);
+        setOnClick(@vEventHandler);
+        setOnKeyPress(@vEventHandler);
+        setTag(eZTagCombobox);
+        setTop(vPosition.y);
+        if vDimensions[0] then
+          setWidth(vDimensions[0]);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+    'edit':
+      with tEdit(_Component) do
+      begin
+        init(self.__);
+        setCaption(replaceRegExpr('^$',vCaption,#0,false));
+        if _Font then
+          setFont(_Font);
+        if vDimensions[1] then
+          setHeight(vDimensions[1]);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        setOnChange(@vEventHandler);
+        setParent(self.__);
+        setTag(eZTagEdit);
+        setTop(vPosition.y);
+        if vDimensions[0] then
+          setWidth(vDimensions[0]);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+    'groupbox':
+      with tGroupbox(_Component) do
+      begin
+        init(self.__);
+        setCaption(replaceRegExpr('^$',vCaption,#0,false));
+        if _Font then
+          setFont(_Font);
+        if vDimensions[1] then
+          setHeight(vDimensions[1]);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        setParent(self.__);
+        setTag(eZTagGroupbox);
+        setTop(vPosition.y);
+        if vDimensions[0] then
+          setWidth(vDimensions[0]);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+    'image':
+    begin
+      if fileExists(vCaption) then
+        with _Picture do
+        begin
+          init();
+          loadFromFile(vCaption);
+        end;
+      with tImage(_Component) do
+      begin
+        init(self.__);
+        if vDimensions[1] then
+          setHeight(vDimensions[1]);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        setOnClick(@vEventHandler);
+        setParent(self.__);
+        if _Picture then
+          setPicture(_Picture);
+        setStretch(true);
+        setTag(eZTagImage);
+        setTop(vPosition.y);
+        if vDimensions[0] then
+          setWidth(vDimensions[0]);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+    end;
+    'label':
+      with tLabel(_Component) do
+      begin
+        init(self.__);
+        setCaption(replaceRegExpr('^$',vCaption,#0,false));
+        if _Font then
+          setFont(_Font);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        setParent(self.__);
+        setTag(eZTagLabel);
+        setTop(vPosition.y);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+    'listbox':
+      with tListbox(_Component) do
+      begin
+        init(self.__);
+        _ListArray:=explode('|',vCaption);
+        for _Index to high(_ListArray) do
+          addItem(_ListArray[_Index],nil);
+        setCaption(replaceRegExpr('^$',vCaption,#0,false));
+        setClickOnSelChange(true);
+        if _Font then
+          setFont(_Font);
+        if vDimensions[1] then
+          setHeight(vDimensions[1]);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        setOnClick(@vEventHandler);
+        setParent(self.__);
+        setTag(eZTagListbox);
+        setTop(vPosition.y);
+        if vDimensions[0] then
+          setWidth(vDimensions[0]);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+    'memo':
+      with tMemo(_Component) do
+      begin
+        init(self.__);
+        setCaption(replaceRegExpr('^$',vCaption,#0,false));
+        if _Font then
+          setFont(_Font);
+        if vDimensions[1] then
+          setHeight(vDimensions[1]);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        setOnChange(@vEventHandler);
+        setParent(self.__);
+        setTag(eZTagMemo);
+        setTop(vPosition.y);
+        setWantReturns(false);
+        setWordWrap(true);
+        if vDimensions[0] then
+          setWidth(vDimensions[0]);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+    'radiobutton':
+      with tRadioButton(_Component) do
+      begin
+        init(self.__);
+        setCaption(replaceRegExpr('^$',vCaption,#0,false));
+        if _Font then
+          setFont(_Font);
+        setLeft(vPosition.x);
+        if vHandle<>'' then
+          setName(vHandle);
+        setOnChange(@vEventHandler);
+        setParent(self.__);
+        setTag(eZTagRadioButton);
+        setTop(vPosition.y);
+        result:=tZComponent(_Component);
+        insert(tZComponent(_Component),ezFormComponentArray);
+      end;
+  end;
+end;
+
+function tZForm.find():tZComponentArray;
+begin
+  exit(ezFormComponentArray);
+end;
+
+function tZForm.find(vSelector:string):tZComponentArray;overload;
+var
+  _Index:int32;
+begin
+  if execRegExpr('^#[\w-]+$',vSelector:=lowercase(vSelector)) then
+    result+=tZComponent(self.__.findComponent(replaceRegExpr('^#([\w-]+)$',vSelector,'$1',true)))
+  else if execRegExpr('^[A-z]+$',vSelector) then
+    for _Index to high(ezFormComponentArray) do
+      if ezFormComponentArray[_Index].prop('tagname')=vSelector then
+        result+=ezFormComponentArray[_Index];
+  exit(result);
+end;
+
+function tZForm.height():int32;
+begin
+  exit(self.__.getHeight());
+end;
+
+function tZForm.height(vValue:int32):tZForm;overload;
+begin
+  self.__.setHeight(vValue);
+  exit(self);
+end;
+
+function tZForm.new(vTitle:string='';vDimensions:array[0..1] of int32=[0,0]):tZForm;
+begin
+  with self.__ do
+  begin
+    init(nil);
+    setBorderIcons([biSystemMenu,biMinimize]);
+    setBorderStyle(3);
+    setCaption(vTitle:=replaceRegExpr('^$',vTitle,'tZForm',false));
+    if vDimensions[1] then
+      setHeight(vDimensions[1]);
+    setPosition(poScreenCenter);
+    if vDimensions[0] then
+      setWidth(vDimensions[0]);
+  end;
+  addOnTerminate('pzFormFree');
+  exit(self);
+end;
+
+procedure tZForm.remove(vComponent:tZComponent);
+begin
+  ezFormComponentArray:=ezFormComponentArray.delete(vComponent);
+  vComponent.hide();
+  vComponent.__.free();
+end;
+
+procedure tZForm.remove(vHandle:string);overload;
+begin
+  ezFormComponentArray:=eZFormComponentArray.delete(tZComponent(self.__.findComponent(vHandle)));
+  tZComponent(self.__.findComponent(vHandle)).hide();
+  self.__.findComponent(vHandle).free();
+end;
+
+function tZForm.show():boolean;
+begin
+  sync(pZFormShow);
+end;
+
+function tZForm.width():int32;
+begin
+  exit(self.__.getWidth());
+end;
+
+function tZForm.width(vValue:int32):tZForm;overload;
+begin
+  self.__.setWidth(vValue);
+  exit(self);
+end;
+
+(*
+  tZFormComponent Methods
+*)
+
+function tZComponent.be(vProperty:string):boolean;
+begin
+  if self.__<>nil then
+    case lowercase(vProperty) of
+      'button':result:=self.__.getTag()=eZTagButton;
+      'checkbox':result:=self.__.getTag()=eZTagCheckbox;
+      'combobox':result:=self.__.getTag()=eZTagCombobox;
+      'checked':
+        case self.__.getTag() of
+          eZTagCheckbox:result:=tCheckbox(self.__).getState()=1;
+          eZTagRadioButton:result:=tRadioButton(self.__).getState()=1;
+        end;
+      'disabled':
+        case self.__.getTag() of
+          eZTagButton:result:=not tButton(self.__).getEnabled();
+          eZTagCheckbox:result:=not tCheckbox(self.__).getEnabled();
+          eZTagEdit:result:=not tEdit(self.__).getEnabled();
+          eZTagListbox:result:=not tListbox(self.__).getEnabled();
+          eZTagMemo:result:=not tMemo(self.__).getEnabled();
+          eZTagRadioButton:result:=not tRadioButton(self.__).getEnabled();
+        end;
+      'edit':result:=self.__.getTag()=eZTagEdit;
+      'groupbox':result:=self.__.getTag()=eZTagGroupbox;
+      'image':result:=self.__.getTag()=eZTagImage;
+      'label':result:=self.__.getTag()=eZTagLabel;
+      'listbox':result:=self.__.getTag()=eZTagListbox;
+      'memo':result:=self.__.getTag()=eZTagMemo;
+      'radiobutton':result:=self.__.getTag()=eZTagRadioButton;
+      'readonly':
+        case self.__.getTag() of
+          eZTagCombobox:result:=tCombobox(self.__).getReadOnly();
+          eZTagEdit:result:=tEdit(self.__).getReadOnly();
+          eZTagMemo:result:=tMemo(self.__).getReadOnly();
+        end;
+      'visible':
+        case self.__.getTag() of
+          eZTagButton:result:=tButton(self.__).getVisible();
+          eZTagCheckbox:result:=tCheckbox(self.__).getVisible();
+          eZTagCombobox:result:=tCombobox(self.__).getVisible();
+          eZTagEdit:result:=tEdit(self.__).getVisible();
+          eZTagGroupbox:result:=tGroupbox(self.__).getVisible();
+          eZTagImage:result:=tImage(self.__).getVisible();
+          eZTagLabel:result:=tLabel(self.__).getVisible();
+          eZTagListbox:result:=tListbox(self.__).getVisible();
+          eZTagMemo:result:=tMemo(self.__).getVisible();
+          eZTagRadioButton:result:=tRadioButton(self.__).getVisible();
+        end;
+    end;
+  exit(result);
+end;
+
+function tZComponent.height():int32;
+begin
+  exit(self.prop('height'));
+end;
+
+function tZComponent.height(vValue:int32):tZComponent;overload;
+begin
+  exit(self.prop('height',vValue));
+end;
+
+function tZComponent.hide():tZComponent;
+begin
+  exit(self.prop('visible',false));
+end;
+
+function tZComponent.offset():tPoint;
+begin
+  result:=[self.prop('offsetleft'),self.prop('offsettop')];
+  exit(result);
+end;
+
+function tZComponent.offset(vPosition:tPoint):tZComponent;overload;
+begin
+  self.prop('offsetleft',vPosition.x);
+  self.prop('offsettop',vPosition.y);
+  exit(self);
+end;
+
+function tZComponent.position():tPoint;
+begin
+  exit(self.offset());
+end;
+
+function tZComponent.position(vPosition:tPoint):tZComponent;overload;
+begin
+  exit(self.offset(vPosition));
+end;
+
+function tZComponent.prop(vProperty:string):variant;
+begin
+  if self.__<>nil then
+    case lowercase(vProperty) of
+      'checked':
+        case self.__.getTag() of
+          eZTagCheckbox:result:=tCheckbox(self.__).getState()=1;
+          eZTagRadioButton:result:=tRadioButton(self.__).getState()=1;
+        end;
+      'color':
+        case self.__.getTag() of
+          eZTagButton:result:=tButton(self.__).getFont().getColor();
+          eZTagCheckbox:result:=tCheckbox(self.__).getFont().getColor();
+          eZTagCombobox:result:=tCombobox(self.__).getFont().getColor();
+          eZTagEdit:result:=tEdit(self.__).getFont().getColor();
+          eZTagGroupbox:result:=tGroupbox(self.__).getFont().getColor();
+          eZTagLabel:result:=tLabel(self.__).getFont().getColor();
+          eZTagListbox:result:=tListbox(self.__).getFont().getColor();
+          eZTagMemo:result:=tMemo(self.__).getFont().getColor();
+          eZTagRadioButton:result:=tRadioButton(self.__).getFont().getColor();
+        end;
+      'cols':
+        case self.__.getTag() of
+          eZTagListbox:result:=tListbox(self.__).getColumns();
+        end;
+      'disabled':
+        case self.__.getTag() of
+          eZTagButton:result:=not tButton(self.__).getEnabled();
+          eZTagCheckbox:result:=not tCheckbox(self.__).getEnabled();
+          eZTagCombobox:result:=not tCheckbox(self.__).getEnabled();
+          eZTagEdit:result:=not tEdit(self.__).getEnabled();
+          eZTagMemo:result:=not tMemo(self.__).getEnabled();
+          eZTagRadioButton:result:=not tRadioButton(self.__).getEnabled();
+        end;
+      'height':
+        case self.__.getTag() of
+          eZTagButton:result:=tButton(self.__).getHeight();
+          eZTagCheckbox:result:=tCheckbox(self.__).getHeight();
+          eZTagCombobox:result:=tCheckbox(self.__).getHeight();
+          eZTagEdit:result:=tEdit(self.__).getHeight();
+          eZTagGroupbox:result:=tGroupbox(self.__).getHeight();
+          eZTagImage:result:=tImage(self.__).getHeight();
+          eZTagLabel:result:=tLabel(self.__).getHeight();
+          eZTagListbox:result:=tListbox(self.__).getHeight();
+          eZTagMemo:result:=tMemo(self.__).getHeight();
+          eZTagRadioButton:result:=tRadioButton(self.__).getHeight();
+        end;
+      'maxlength':
+        case self.__.getTag() of
+          eZTagEdit:result:=tEdit(self.__).getMaxLength();
+          eZTagMemo:result:=tMemo(self.__).getMaxLength();
+        end;
+      'multiple':
+        case self.__.getTag() of
+          eZTagListbox:result:=tListbox(self.__).getMultiSelect();
+          eZTagMemo:result:=tMemo(self.__).getWantReturns();
+        end;
+      'offsetleft':
+        case self.__.getTag() of
+          eZTagButton:result:=tButton(self.__).getLeft();
+          eZTagCheckbox:result:=tCheckbox(self.__).getLeft();
+          eZTagCombobox:result:=tCheckbox(self.__).getLeft();
+          eZTagEdit:result:=tEdit(self.__).getLeft();
+          eZTagGroupbox:result:=tGroupbox(self.__).getLeft();
+          eZTagImage:result:=tImage(self.__).getLeft();
+          eZTagLabel:result:=tLabel(self.__).getLeft();
+          eZTagListbox:result:=tListbox(self.__).getLeft();
+          eZTagMemo:result:=tMemo(self.__).getLeft();
+          eZTagRadioButton:result:=tRadioButton(self.__).getLeft();
+        end;
+      'offsettop':
+        case self.__.getTag() of
+          eZTagButton:result:=tButton(self.__).getTop();
+          eZTagCheckbox:result:=tCheckbox(self.__).getTop();
+          eZTagCombobox:result:=tCheckbox(self.__).getTop();
+          eZTagEdit:result:=tEdit(self.__).getTop();
+          eZTagGroupbox:result:=tGroupbox(self.__).getTop();
+          eZTagImage:result:=tImage(self.__).getTop();
+          eZTagLabel:result:=tLabel(self.__).getTop();
+          eZTagListbox:result:=tListbox(self.__).getTop();
+          eZTagMemo:result:=tMemo(self.__).getTop();
+          eZTagRadioButton:result:=tRadioButton(self.__).getTop();
+        end;
+      'tagname':
+        case self.__.getTag() of
+          eZTagButton:result:='button';
+          eZTagCheckbox:result:='checkbox';
+          eZTagCombobox:result:='combobox';
+          eZTagEdit:result:='edit';
+          eZTagGroupbox:result:='groupbox';
+          eZTagImage:result:='image';
+          eZTagLabel:result:='label';
+          eZTagListbox:result:='listbox';
+          eZTagMemo:result:='memo';
+          eZTagRadioButton:result:='radiobutton';
+        end;
+      'readonly':
+        case self.__.getTag() of
+          eZTagCombobox:result:=tCombobox(self.__).getReadOnly();
+          eZTagEdit:result:=tEdit(self.__).getReadOnly();
+          eZTagMemo:result:=tMemo(self.__).getReadOnly();
+        end;
+      'value':
+        case self.__.getTag() of
+          eZTagCombobox:result:=tCombobox(self.__).getText();
+          eZTagEdit:result:=tEdit(self.__).getText();
+          eZTagListbox:result:=tListbox(self.__).getSelectedText();
+          eZTagMemo:result:=tMemo(self.__).getText();
+        end;
+      'visible':
+        case self.__.getTag() of
+          eZTagButton:result:=tButton(self.__).getVisible();
+          eZTagCheckbox:result:=tCheckbox(self.__).getVisible();
+          eZTagCombobox:result:=tCombobox(self.__).getVisible();
+          eZTagEdit:result:=tEdit(self.__).getVisible();
+          eZTagGroupbox:result:=tGroupbox(self.__).getVisible();
+          eZTagImage:result:=tImage(self.__).getVisible();
+          eZTagLabel:result:=tLabel(self.__).getVisible();
+          eZTagListbox:result:=tListbox(self.__).getVisible();
+          eZTagMemo:result:=tMemo(self.__).getVisible();
+          eZTagRadioButton:result:=tRadioButton(self.__).getVisible();
+        end;
+      'width':
+        case self.__.getTag() of
+          eZTagButton:result:=tButton(self.__).getWidth();
+          eZTagCheckbox:result:=tCheckbox(self.__).getWidth();
+          eZTagCombobox:result:=tCombobox(self.__).getWidth();
+          eZTagEdit:result:=tEdit(self.__).getWidth();
+          eZTagGroupbox:result:=tGroupbox(self.__).getWidth();
+          eZTagImage:result:=tImage(self.__).getWidth();
+          eZTagLabel:result:=tLabel(self.__).getWidth();
+          eZTagListbox:result:=tListbox(self.__).getWidth();
+          eZTagMemo:result:=tMemo(self.__).getWidth();
+          eZTagRadioButton:result:=tRadioButton(self.__).getWidth();
+        end;
+    end;
+  exit(result);
+end;
+
+function tZComponent.prop(vProperty:string;vValue:variant):tZComponent;overload;
+var
+  _Font:tFont;
+begin
+  if self.__<>nil then
+    case lowercase(vProperty) of
+      'checked':
+        if varType(vValue)=varBoolean then
+          case self.__.getTag() of
+            eZTagCheckbox:tCheckbox(self.__).setState(abs(int32(vValue)));
+            eZTagRadioButton:tRadioButton(self.__).setState(abs(int32(vValue)));
+          end;
+      'color':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagButton:tButton(self.__).getFont().setColor(vValue);
+            eZTagCheckbox:tCheckbox(self.__).getFont().setColor(vValue);
+            eZTagCheckbox:tCombobox(self.__).getFont().setColor(vValue);
+            eZTagEdit:tEdit(self.__).getFont().setColor(vValue);
+            eZTagGroupbox:tGroupbox(self.__).getFont().setColor(vValue);
+            eZTagLabel:tLabel(self.__).getFont().setColor(vValue);
+            eZTagListbox:tListbox(self.__).getFont().setColor(vValue);
+            eZTagMemo:tMemo(self.__).getFont().setColor(vValue);
+            eZTagRadioButton:tRadioButton(self.__).getFont().setColor(vValue);
+          end;
+      'cols':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagListbox:tListbox(self.__).setColumns(vValue);
+          end;
+      'disabled':
+        if varType(vValue)=varBoolean then
+          case self.__.getTag() of
+            eZTagButton:tButton(self.__).setEnabled(not vValue);
+            eZTagCheckbox:tCheckbox(self.__).setEnabled(not vValue);
+            eZTagCombobox:tCheckbox(self.__).setEnabled(not vValue);
+            eZTagEdit:tEdit(self.__).setEnabled(not vValue);
+            eZTagListbox:tListbox(self.__).setEnabled(not vValue);
+            eZTagMemo:tMemo(self.__).setEnabled(not vValue);
+            eZTagRadioButton:tRadioButton(self.__).setEnabled(not vValue);
+          end;
+      'height':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagButton:tButton(self.__).setHeight(vValue);
+            eZTagGroupbox:tGroupbox(self.__).setHeight(vValue);
+            eZTagImage:tImage(self.__).setHeight(vValue);
+            eZTagListbox:tListbox(self.__).setHeight(vValue);
+            eZTagMemo:tMemo(self.__).setHeight(vValue);
+          end;
+      'maxlength':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagEdit:tEdit(self.__).setMaxLength(vValue);
+            eZTagMemo:tMemo(self.__).setMaxLength(vValue);
+          end;
+      'multiple':
+        if varType(vValue)=varBoolean then
+          case self.__.getTag() of
+            eZTagListbox:tListbox(self.__).setMultiSelect(vValue);
+            eZTagMemo:tMemo(self.__).setWantReturns(vValue);
+          end;
+      'offsetleft':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagButton:tButton(self.__).setLeft(vValue);
+            eZTagCheckbox:tCheckbox(self.__).setLeft(vValue);
+            eZTagCombobox:tCheckbox(self.__).setLeft(vValue);
+            eZTagEdit:tEdit(self.__).setLeft(vValue);
+            eZTagGroupbox:tGroupbox(self.__).setLeft(vValue);
+            eZTagImage:tImage(self.__).setLeft(vValue);
+            eZTagLabel:tLabel(self.__).setLeft(vValue);
+            eZTagListbox:tListbox(self.__).setLeft(vValue);
+            eZTagMemo:tMemo(self.__).setLeft(vValue);
+            eZTagRadioButton:tRadioButton(self.__).setLeft(vValue);
+          end;
+      'offsettop':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagButton:tButton(self.__).setTop(vValue);
+            eZTagCheckbox:tCheckbox(self.__).setTop(vValue);
+            eZTagCombobox:tCheckbox(self.__).setTop(vValue);
+            eZTagEdit:tEdit(self.__).setTop(vValue);
+            eZTagGroupbox:tGroupbox(self.__).setTop(vValue);
+            eZTagImage:tImage(self.__).setTop(vValue);
+            eZTagLabel:tLabel(self.__).setTop(vValue);
+            eZTagListbox:tListbox(self.__).setTop(vValue);
+            eZTagMemo:tMemo(self.__).setTop(vValue);
+            eZTagRadioButton:tRadioButton(self.__).setTop(vValue);
+          end;
+      'readonly':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagCombobox:tCombobox(self.__).setReadOnly(vValue);
+            eZTagEdit:tEdit(self.__).setReadOnly(vValue);
+            eZTagMemo:tMemo(self.__).setReadOnly(vValue);
+          end;
+      'title':
+        if varType(vValue)=varString then
+        begin
+          case self.__.getTag() of
+            eZTagButton:
+              begin
+                tButton(self.__).setHint(vValue);
+                tButton(self.__).setShowHint(vValue<>'');
+              end;
+            eZTagCheckbox:
+              begin
+                tCheckbox(self.__).setHint(vValue);
+                tCheckbox(self.__).setShowHint(vValue<>'');
+              end;
+            eZTagCombobox:
+              begin
+                tCombobox(self.__).setHint(vValue);
+                tCombobox(self.__).setShowHint(vValue<>'');
+              end;
+            eZTagEdit:
+              begin
+                tEdit(self.__).setHint(vValue);
+                tEdit(self.__).setShowHint(vValue<>'');
+              end;
+            eZTagGroupbox:
+              begin
+                tGroupbox(self.__).setHint(vValue);
+                tGroupbox(self.__).setShowHint(vValue<>'');
+              end;
+            eZTagLabel:
+              begin
+                tLabel(self.__).setHint(vValue);
+                tLabel(self.__).setShowHint(vValue<>'');
+              end;
+            eZTagListbox:
+              begin
+                tListbox(self.__).setHint(vValue);
+                tListbox(self.__).setShowHint(vValue<>'');
+              end;
+            eZTagMemo:
+              begin
+                tMemo(self.__).setHint(vValue);
+                tMemo(self.__).setShowHint(vValue<>'');
+              end;
+            eZTagRadioButton:
+              begin
+                tRadioButton(self.__).setHint(vValue);
+                tRadioButton(self.__).setShowHint(vValue<>'');
+              end;
+          end;
+        end;
+      'value':
+        if (varType(vValue)=varInteger) or (varType(vValue)=varString) then
+          case self.__.getTag() of
+            eZTagCombobox:tCombobox(self.__).setText(toStr(vValue));
+            eZTagEdit:tEdit(self.__).setText(toStr(vValue));
+            eZTagMemo:tMemo(self.__).setText(toStr(vValue));
+          end;
+      'visible':
+        if varType(vValue)=varBoolean then
+          case self.__.getTag() of
+            eZTagButton:tButton(self.__).setVisible(vValue);
+            eZTagCheckbox:tCheckbox(self.__).setVisible(vValue);
+            eZTagCombobox:tCombobox(self.__).setVisible(vValue);
+            eZTagEdit:tEdit(self.__).setVisible(vValue);
+            eZTagGroupbox:tGroupbox(self.__).setVisible(vValue);
+            eZTagImage:tImage(self.__).setVisible(vValue);
+            eZTagLabel:tLabel(self.__).setVisible(vValue);
+            eZTagListbox:tListbox(self.__).setVisible(vValue);
+            eZTagMemo:tMemo(self.__).setVisible(vValue);
+            eZTagRadioButton:tRadioButton(self.__).setVisible(vValue);
+          end;
+      'width':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagButton:tButton(self.__).setWidth(vValue);
+            eZTagCombobox:tEdit(self.__).setWidth(vValue);
+            eZTagEdit:tEdit(self.__).setWidth(vValue);
+            eZTagGroupbox:tGroupbox(self.__).setWidth(vValue);
+            eZTagImage:tImage(self.__).setWidth(vValue);
+            eZTagListbox:tListbox(self.__).setWidth(vValue);
+            eZTagMemo:tMemo(self.__).setWidth(vValue);
+          end;
+    end;
+  exit(self);
+end;
+
+function tZComponent.prop(vProperty:tZProp):tZComponent;overload;
+begin
+  if self.__<>nil then
+    case vProperty of
+      eZPropChecked:self.prop('checked',true);
+      eZPropDisabled:self.prop('disabled',true);
+      eZPropReadOnly:self.prop('readonly',true);
+      eZPropVisible:self.prop('visible',true);
+    end;
+  exit(self);
+end;
+
+procedure tZComponent.remove();
+begin
+  ezFormComponentArray:=ezFormComponentArray.delete(self);
+  self.hide();
+  self.__.free();
+end;
+
+function tZComponent.setClipboard():tZComponent;
+begin
+  if self.__<>nil then
+    case self.__.getTag() of
+      eZTagEdit:tEdit(self.__).copyToClipboard();
+      eZTagMemo:tMemo(self.__).copyToClipboard();
+    end;
+  exit(self);
+end;
+
+function tZComponent.show():tZComponent;
+begin
+  exit(self.prop('visible',true));
+end;
+
+function tZComponent.text():string;
+begin
+  if self.__<>nil then
+    case self.__.getTag() of
+      eZTagButton:result:=tButton(self.__).getCaption();
+      eZTagCheckbox:result:=tCheckbox(self.__).getCaption();
+      eZTagCombobox:result:=tCheckbox(self.__).getCaption();
+      eZTagEdit:result:=tEdit(self.__).getText();
+      eZTagGroupbox:result:=tGroupbox(self.__).getCaption();
+      eZTagLabel:result:=tLabel(self.__).getCaption();
+      eZTagMemo:result:=tMemo(self.__).getText();
+      eZTagRadioButton:result:=tRadioButton(self.__).getCaption();
+    end;
+  exit(result);
+end;
+
+function tZComponent.text(vText:string):tZComponent;overload;
+begin
+  if self.__<>nil then
+    case self.__.getTag() of
+      eZTagButton:tButton(self.__).setCaption(vText);
+      eZTagCheckbox:tCheckbox(self.__).setCaption(vText);
+      eZTagCombobox:tCombobox(self.__).setCaption(vText);
+      eZTagEdit:tEdit(self.__).setText(vText);
+      eZTagGroupbox:tGroupbox(self.__).setCaption(vText);
+      eZTagLabel:tLabel(self.__).setCaption(vText);
+      eZTagMemo:tMemo(self.__).setText(vText);
+      eZTagRadioButton:tRadioButton(self.__).setCaption(vText);
+    end;
+  exit(self);
+end;
+
+function tZComponent.width():int32;
+begin
+  exit(self.prop('width'));
+end;
+
+function tZComponent.width(vValue:int32):tZComponent;overload;
+begin
+  exit(self.prop('width',vValue));
+end;
+
+function tZComponent.val():variant;
+begin
+  exit(self.prop('value'));
+end;
+
+function tZComponent.val(vValue:variant):tZComponent;overload;
+begin
+  exit(self.prop('value',vValue));
+end;
+
+
+function tZComponentArray.delete(vComponent:tZComponent):tZComponentArray;
+var
+  _ComponentIndex,
+    _ResultIndex:int32;
+  _ComponentArray:tZComponentArray;
+begin
+  setLength(_ComponentArray,length(self));
+  for _ComponentIndex to high(self) do
+    if self[_ComponentIndex].__<>vComponent.__ then
+    begin
+      _ComponentArray[_ResultIndex]:=self[_ComponentIndex];
+      _ResultIndex+=1;
+    end;
+  setLength(_ComponentArray,_ResultIndex);
+  result:=_ComponentArray;
+end;
+
+function tZComponentArray.eq(vIndex:int32):tZComponent;
+begin
+  if length(self) and (vIndex>=low(self)) and (vIndex<=high(self)) then
+    result:=self[vIndex];
+  exit(result);
+end;
+
+function tZComponentArray.first():tZComponent;
+begin
+  if length(self) then
+    result:=self[0];
+  exit(result);
+end;
+
+function tZComponentArray.last():tZComponent;
+begin
+  if length(self) then
+    result:=self[high(self)];
+  exit(result);
+end;
+
+{
+ToDo:
+TForm.
+TLabel.
+TButton.
+TBitBtn.
+TSpeedButton.
+TComboBox.
+TEdit.
+TRichEdit.
+TMemo.
+TImage.
+TShape.
+TScrollBox.
+TCheckListBox.
+TProgressBar.
+TCheckBox.
+TRadioButton.
+TBevel.
+TTimer.
+TMainMenu.
+TPopupMenu.
+TTabControl.
+TOpenDialog.
+TSaveDialog.
+TFontDialog.
+TColorDialog.
+TFindDialog.
+TReplaceDialog.
+}
