@@ -905,6 +905,9 @@ begin
   exit(self.prop('value',vValue));
 end;
 
+(*
+  tZFormComponentArray Methods
+*)
 
 function tZComponentArray.delete(vComponent:tZComponent):tZComponentArray;
 var
@@ -923,6 +926,36 @@ begin
   result:=_ComponentArray;
 end;
 
+function tZComponentArray.delete(vSelector:string):tZComponentArray;overload;
+var
+  _ComponentIndex,
+    _ResultIndex:int32;
+  _ComponentArray:tZComponentArray;
+begin
+  setLength(_ComponentArray,length(self));
+  if execRegExpr('^#[\w-]+$',vSelector:=lowercase(vSelector)) then
+  begin
+    vSelector:=replaceRegExpr('^#([\w-]+)$',vSelector,'$1',true);
+    for _ComponentIndex to high(self) do
+      if lowercase(self[_ComponentIndex].__.getName())<>vSelector then
+      begin
+        _ComponentArray[_ResultIndex]:=self[_ComponentIndex];
+        _ResultIndex+=1;
+      end;
+  end
+  else if execRegExpr('^[A-z]+$',vSelector) then
+  begin
+    for _ComponentIndex to high(self) do
+      if self[_ComponentIndex].prop('tagname')<>vSelector then
+        begin
+          _ComponentArray[_ResultIndex]:=self[_ComponentIndex];
+          _ResultIndex+=1;
+        end;
+  end;
+  setLength(_ComponentArray,_ResultIndex);
+  result:=_ComponentArray;
+end;
+
 function tZComponentArray.eq(vIndex:int32):tZComponent;
 begin
   if length(self) and (vIndex>=low(self)) and (vIndex<=high(self)) then
@@ -937,12 +970,107 @@ begin
   exit(result);
 end;
 
+function tZComponentArray.height(vValue:int32):tZComponentArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].height(vValue);
+  exit(self);
+end;
+
+function tZComponentArray.hide():tZComponentArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].hide();
+  exit(self);
+end;
+
+function tZComponentArray.isnt(vComponent:tZComponent):tZComponentArray;
+begin
+  exit(self.delete(vComponent));
+end;
+
+function tZComponentArray.isnt(vSelector:string):tZComponentArray;overload;
+begin
+  exit(self.delete(vSelector));
+end;
+
 function tZComponentArray.last():tZComponent;
 begin
   if length(self) then
     result:=self[high(self)];
   exit(result);
 end;
+
+function tZComponentArray.prop(vProperty:string;vValue:variant):tZComponentArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].prop(vProperty,vValue);
+  exit(self);
+end;
+
+function tZComponentArray.prop(vProperty:tZProp):tZComponentArray;overload;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].prop(vProperty);
+  exit(self);
+end;
+
+function tZComponentArray.show():tZComponentArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].show();
+  exit(self);
+end;
+
+procedure tZComponentArray.remove();
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+  begin
+    ezFormComponentArray:=ezFormComponentArray.delete(self[_Index]);
+    self[_Index].hide();
+    self[_Index].__.free();
+  end;
+end;
+
+function tZComponentArray.text(vText:string):tZComponentArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].text(vText);
+  exit(self);
+end;
+
+function tZComponentArray.val(vValue:variant):tZComponentArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].val(vValue);
+  exit(self);
+end;
+
+function tZComponentArray.width(vValue:int32):tZComponentArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].width(vValue);
+  exit(self);
+end;
+
 
 {
 ToDo:
