@@ -8,7 +8,7 @@ const
   eZTagLabel=7;
   eZTagListBox=8;
   eZTagMemo=9;
-  eZTagRadioButton=10;
+  eZTagProgressBar=10;
 
 type tZProp=(eZPropChecked,eZPropDisabled,ezPropReadOnly,eZPropVisible);
 
@@ -45,8 +45,8 @@ begin exit(self.addComponent('button',vCaption,vFont,vHandle,vPosition,vDimensio
 function tZForm.addCheckbox(vCaption,vFont,vHandle:string;vPosition:tPoint;vEventHandler:procedure()):tZComponent;
 begin exit(self.addComponent('checkbox',vCaption,vFont,vHandle,vPosition,[0,0],@vEventHandler));end;
 
-function tZForm.addCombobox(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
-begin exit(self.addComponent('combobox',vCaption,vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
+function tZForm.addCombobox(vCaption:tStringArray;vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('combobox',implode('|',vCaption),vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
 
 function tZForm.addEdit(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
 begin exit(self.addComponent('edit',vCaption,vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
@@ -60,14 +60,14 @@ begin exit(self.addComponent('image',vFilePath,'',vHandle,vPosition,vDimensions,
 function tZForm.addLabel(vCaption,vFont,vHandle:string;vPosition:tPoint):tZComponent;
 begin exit(self.addComponent('label',vCaption,vFont,vHandle,vPosition,[0,0],nil));end;
 
-function tZForm.addListbox(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
-begin exit(self.addComponent('listbox',vCaption,vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
+function tZForm.addListbox(vCaption:tStringArray;vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
+begin exit(self.addComponent('listbox',implode('|',vCaption),vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
 
 function tZForm.addMemo(vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
 begin exit(self.addComponent('memo',vCaption,vFont,vHandle,vPosition,vDimensions,@vEventHandler));end;
 
-function tZForm.addRadioButton(vCaption,vFont,vHandle:string;vPosition:tPoint;vEventHandler:procedure()):tZComponent;
-begin exit(self.addComponent('radiobutton',vCaption,vFont,vHandle,vPosition,[0,0],@vEventHandler));end;
+function tZForm.addProgressbar(vValue:int32;vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32):tZComponent;
+begin exit(self.addComponent('progressbar',toStr(vValue),'',vHandle,vPosition,vDimensions,nil));end;
 
 function tZForm.addComponent(vComponent,vCaption,vFont,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
 var
@@ -306,20 +306,25 @@ begin
         result:=tZComponent(_Component);
         insert(tZComponent(_Component),ezFormComponentArray);
       end;
-    'radiobutton':
-      with tRadioButton(_Component) do
+    'progressbar':
+      with tProgressbar(_Component) do
       begin
         init(self.__);
-        setCaption(replaceRegExpr('^$',vCaption,#0,false));
-        if _Font then
-          setFont(_Font);
+        if vDimensions[1] then
+          setHeight(vDimensions[1]);
         setLeft(vPosition.x);
+        setMax(100);
+        setMin(0);
         if vHandle<>'' then
           setName(vHandle);
-        setOnChange(@vEventHandler);
         setParent(self.__);
-        setTag(eZTagRadioButton);
+        if execRegExpr('^\d+$',vCaption) then
+          setPosition(strToInt(vCaption));
+        setStep(1);
+        setTag(eZTagProgressBar);
         setTop(vPosition.y);
+        if vDimensions[0] then
+          setWidth(vDimensions[0]);
         result:=tZComponent(_Component);
         insert(tZComponent(_Component),ezFormComponentArray);
       end;
@@ -333,14 +338,23 @@ end;
 
 function tZForm.find(vSelector:string):tZComponentArray;overload;
 var
-  _Index:int32;
+  _Index,
+    _ResultIndex:int32;
 begin
+  setLength(result,self.__.getComponentCount());
   if execRegExpr('^#[\w-]+$',vSelector:=lowercase(vSelector)) then
-    result+=tZComponent(self.__.findComponent(replaceRegExpr('^#([\w-]+)$',vSelector,'$1',true)))
+  begin
+    result[0]:=tZComponent(self.__.findComponent(replaceRegExpr('^#([\w-]+)$',vSelector,'$1',true)));
+    _ResultIndex:=1;
+  end
   else if execRegExpr('^[A-z]+$',vSelector) then
     for _Index to high(ezFormComponentArray) do
       if ezFormComponentArray[_Index].prop('tagname')=vSelector then
-        result+=ezFormComponentArray[_Index];
+      begin
+        result[_ResultIndex]:=ezFormComponentArray[_Index];
+        _ResultIndex+=1;
+      end;
+  setLength(result,_ResultIndex);
   exit(result);
 end;
 
@@ -417,7 +431,6 @@ begin
       'checked':
         case self.__.getTag() of
           eZTagCheckbox:result:=tCheckbox(self.__).getState()=1;
-          eZTagRadioButton:result:=tRadioButton(self.__).getState()=1;
         end;
       'disabled':
         case self.__.getTag() of
@@ -426,7 +439,6 @@ begin
           eZTagEdit:result:=not tEdit(self.__).getEnabled();
           eZTagListbox:result:=not tListbox(self.__).getEnabled();
           eZTagMemo:result:=not tMemo(self.__).getEnabled();
-          eZTagRadioButton:result:=not tRadioButton(self.__).getEnabled();
         end;
       'edit':result:=self.__.getTag()=eZTagEdit;
       'groupbox':result:=self.__.getTag()=eZTagGroupbox;
@@ -434,7 +446,7 @@ begin
       'label':result:=self.__.getTag()=eZTagLabel;
       'listbox':result:=self.__.getTag()=eZTagListbox;
       'memo':result:=self.__.getTag()=eZTagMemo;
-      'radiobutton':result:=self.__.getTag()=eZTagRadioButton;
+      'progressbar':result:=self.__.getTag()=eZTagProgressBar;
       'readonly':
         case self.__.getTag() of
           eZTagCombobox:result:=tCombobox(self.__).getReadOnly();
@@ -452,9 +464,23 @@ begin
           eZTagLabel:result:=tLabel(self.__).getVisible();
           eZTagListbox:result:=tListbox(self.__).getVisible();
           eZTagMemo:result:=tMemo(self.__).getVisible();
-          eZTagRadioButton:result:=tRadioButton(self.__).getVisible();
+          eZTagProgressBar:result:=tProgressBar(self.__).getVisible();
         end;
     end;
+  exit(result);
+end;
+
+function tZComponent.equals(vComponent:tZComponent):boolean;
+begin
+  exit(self.__=vComponent.__);
+end;
+
+function tZComponent.equals(vSelector:string):boolean;overload;
+begin
+  if execRegExpr('^#[\w-]+$',vSelector:=lowercase(vSelector)) then
+    result:=lowercase(self.__.getName())=replaceRegExpr('^#([\w-]+)$',vSelector,'$1',true)
+  else if execRegExpr('^[A-z]+$',vSelector) then
+    result:=self.prop('tagName')=vSelector;
   exit(result);
 end;
 
@@ -503,7 +529,6 @@ begin
       'checked':
         case self.__.getTag() of
           eZTagCheckbox:result:=tCheckbox(self.__).getState()=1;
-          eZTagRadioButton:result:=tRadioButton(self.__).getState()=1;
         end;
       'color':
         case self.__.getTag() of
@@ -515,7 +540,6 @@ begin
           eZTagLabel:result:=tLabel(self.__).getFont().getColor();
           eZTagListbox:result:=tListbox(self.__).getFont().getColor();
           eZTagMemo:result:=tMemo(self.__).getFont().getColor();
-          eZTagRadioButton:result:=tRadioButton(self.__).getFont().getColor();
         end;
       'cols':
         case self.__.getTag() of
@@ -528,7 +552,6 @@ begin
           eZTagCombobox:result:=not tCheckbox(self.__).getEnabled();
           eZTagEdit:result:=not tEdit(self.__).getEnabled();
           eZTagMemo:result:=not tMemo(self.__).getEnabled();
-          eZTagRadioButton:result:=not tRadioButton(self.__).getEnabled();
         end;
       'height':
         case self.__.getTag() of
@@ -541,7 +564,6 @@ begin
           eZTagLabel:result:=tLabel(self.__).getHeight();
           eZTagListbox:result:=tListbox(self.__).getHeight();
           eZTagMemo:result:=tMemo(self.__).getHeight();
-          eZTagRadioButton:result:=tRadioButton(self.__).getHeight();
         end;
       'maxlength':
         case self.__.getTag() of
@@ -564,7 +586,7 @@ begin
           eZTagLabel:result:=tLabel(self.__).getLeft();
           eZTagListbox:result:=tListbox(self.__).getLeft();
           eZTagMemo:result:=tMemo(self.__).getLeft();
-          eZTagRadioButton:result:=tRadioButton(self.__).getLeft();
+          eZTagProgressBar:result:=tProgressBar(self.__).getLeft();
         end;
       'offsettop':
         case self.__.getTag() of
@@ -577,7 +599,7 @@ begin
           eZTagLabel:result:=tLabel(self.__).getTop();
           eZTagListbox:result:=tListbox(self.__).getTop();
           eZTagMemo:result:=tMemo(self.__).getTop();
-          eZTagRadioButton:result:=tRadioButton(self.__).getTop();
+          eZTagProgressBar:result:=tProgressBar(self.__).getTop();
         end;
       'tagname':
         case self.__.getTag() of
@@ -590,7 +612,7 @@ begin
           eZTagLabel:result:='label';
           eZTagListbox:result:='listbox';
           eZTagMemo:result:='memo';
-          eZTagRadioButton:result:='radiobutton';
+          eZTagProgressBar:result:='progressbar';
         end;
       'readonly':
         case self.__.getTag() of
@@ -604,6 +626,7 @@ begin
           eZTagEdit:result:=tEdit(self.__).getText();
           eZTagListbox:result:=tListbox(self.__).getSelectedText();
           eZTagMemo:result:=tMemo(self.__).getText();
+          eZTagProgressBar:result:=tProgressBar(self.__).getPosition();
         end;
       'visible':
         case self.__.getTag() of
@@ -616,7 +639,7 @@ begin
           eZTagLabel:result:=tLabel(self.__).getVisible();
           eZTagListbox:result:=tListbox(self.__).getVisible();
           eZTagMemo:result:=tMemo(self.__).getVisible();
-          eZTagRadioButton:result:=tRadioButton(self.__).getVisible();
+          eZTagProgressBar:result:=tProgressBar(self.__).getVisible();
         end;
       'width':
         case self.__.getTag() of
@@ -629,7 +652,7 @@ begin
           eZTagLabel:result:=tLabel(self.__).getWidth();
           eZTagListbox:result:=tListbox(self.__).getWidth();
           eZTagMemo:result:=tMemo(self.__).getWidth();
-          eZTagRadioButton:result:=tRadioButton(self.__).getWidth();
+          eZTagProgressBar:result:=tProgressBar(self.__).getWidth();
         end;
     end;
   exit(result);
@@ -645,7 +668,6 @@ begin
         if varType(vValue)=varBoolean then
           case self.__.getTag() of
             eZTagCheckbox:tCheckbox(self.__).setState(abs(int32(vValue)));
-            eZTagRadioButton:tRadioButton(self.__).setState(abs(int32(vValue)));
           end;
       'color':
         if varType(vValue)=varInteger then
@@ -658,7 +680,6 @@ begin
             eZTagLabel:tLabel(self.__).getFont().setColor(vValue);
             eZTagListbox:tListbox(self.__).getFont().setColor(vValue);
             eZTagMemo:tMemo(self.__).getFont().setColor(vValue);
-            eZTagRadioButton:tRadioButton(self.__).getFont().setColor(vValue);
           end;
       'cols':
         if varType(vValue)=varInteger then
@@ -674,7 +695,6 @@ begin
             eZTagEdit:tEdit(self.__).setEnabled(not vValue);
             eZTagListbox:tListbox(self.__).setEnabled(not vValue);
             eZTagMemo:tMemo(self.__).setEnabled(not vValue);
-            eZTagRadioButton:tRadioButton(self.__).setEnabled(not vValue);
           end;
       'height':
         if varType(vValue)=varInteger then
@@ -684,6 +704,7 @@ begin
             eZTagImage:tImage(self.__).setHeight(vValue);
             eZTagListbox:tListbox(self.__).setHeight(vValue);
             eZTagMemo:tMemo(self.__).setHeight(vValue);
+            eZTagProgressBar:tProgressBar(self.__).setHeight(vValue);
           end;
       'maxlength':
         if varType(vValue)=varInteger then
@@ -709,7 +730,7 @@ begin
             eZTagLabel:tLabel(self.__).setLeft(vValue);
             eZTagListbox:tListbox(self.__).setLeft(vValue);
             eZTagMemo:tMemo(self.__).setLeft(vValue);
-            eZTagRadioButton:tRadioButton(self.__).setLeft(vValue);
+            eZTagProgressBar:tProgressBar(self.__).setLeft(vValue);
           end;
       'offsettop':
         if varType(vValue)=varInteger then
@@ -723,10 +744,10 @@ begin
             eZTagLabel:tLabel(self.__).setTop(vValue);
             eZTagListbox:tListbox(self.__).setTop(vValue);
             eZTagMemo:tMemo(self.__).setTop(vValue);
-            eZTagRadioButton:tRadioButton(self.__).setTop(vValue);
+            eZTagProgressBar:tProgressBar(self.__).setTop(vValue);
           end;
       'readonly':
-        if varType(vValue)=varInteger then
+        if varType(vValue)=varBoolean then
           case self.__.getTag() of
             eZTagCombobox:tCombobox(self.__).setReadOnly(vValue);
             eZTagEdit:tEdit(self.__).setReadOnly(vValue);
@@ -737,50 +758,50 @@ begin
         begin
           case self.__.getTag() of
             eZTagButton:
-              begin
-                tButton(self.__).setHint(vValue);
-                tButton(self.__).setShowHint(vValue<>'');
-              end;
+            begin
+              tButton(self.__).setHint(vValue);
+              tButton(self.__).setShowHint(vValue<>'');
+            end;
             eZTagCheckbox:
-              begin
-                tCheckbox(self.__).setHint(vValue);
-                tCheckbox(self.__).setShowHint(vValue<>'');
-              end;
+            begin
+              tCheckbox(self.__).setHint(vValue);
+              tCheckbox(self.__).setShowHint(vValue<>'');
+            end;
             eZTagCombobox:
-              begin
-                tCombobox(self.__).setHint(vValue);
-                tCombobox(self.__).setShowHint(vValue<>'');
-              end;
+            begin
+              tCombobox(self.__).setHint(vValue);
+              tCombobox(self.__).setShowHint(vValue<>'');
+            end;
             eZTagEdit:
-              begin
-                tEdit(self.__).setHint(vValue);
-                tEdit(self.__).setShowHint(vValue<>'');
-              end;
+            begin
+              tEdit(self.__).setHint(vValue);
+              tEdit(self.__).setShowHint(vValue<>'');
+            end;
             eZTagGroupbox:
-              begin
-                tGroupbox(self.__).setHint(vValue);
-                tGroupbox(self.__).setShowHint(vValue<>'');
-              end;
+            begin
+              tGroupbox(self.__).setHint(vValue);
+              tGroupbox(self.__).setShowHint(vValue<>'');
+            end;
             eZTagLabel:
-              begin
-                tLabel(self.__).setHint(vValue);
-                tLabel(self.__).setShowHint(vValue<>'');
-              end;
+            begin
+              tLabel(self.__).setHint(vValue);
+              tLabel(self.__).setShowHint(vValue<>'');
+            end;
             eZTagListbox:
-              begin
-                tListbox(self.__).setHint(vValue);
-                tListbox(self.__).setShowHint(vValue<>'');
-              end;
+            begin
+              tListbox(self.__).setHint(vValue);
+              tListbox(self.__).setShowHint(vValue<>'');
+            end;
             eZTagMemo:
-              begin
-                tMemo(self.__).setHint(vValue);
-                tMemo(self.__).setShowHint(vValue<>'');
-              end;
-            eZTagRadioButton:
-              begin
-                tRadioButton(self.__).setHint(vValue);
-                tRadioButton(self.__).setShowHint(vValue<>'');
-              end;
+            begin
+              tMemo(self.__).setHint(vValue);
+              tMemo(self.__).setShowHint(vValue<>'');
+            end;
+            eZTagProgressBar:
+            begin
+              tProgressBar(self.__).setHint(vValue);
+              tProgressBar(self.__).setShowHint(vValue<>'');
+            end;
           end;
         end;
       'value':
@@ -789,6 +810,11 @@ begin
             eZTagCombobox:tCombobox(self.__).setText(toStr(vValue));
             eZTagEdit:tEdit(self.__).setText(toStr(vValue));
             eZTagMemo:tMemo(self.__).setText(toStr(vValue));
+            eZTagProgressBar:
+              if execRegExpr('^\d+$',vValue) then
+                tProgressBar(self.__).setPosition(max(0,min(100,strToInt(vValue))))
+              else if execRegExpr('^(\-|\+)\d+$',vValue) then
+                tProgressBar(self.__).stepBy(strToInt(vValue));
           end;
       'visible':
         if varType(vValue)=varBoolean then
@@ -802,7 +828,7 @@ begin
             eZTagLabel:tLabel(self.__).setVisible(vValue);
             eZTagListbox:tListbox(self.__).setVisible(vValue);
             eZTagMemo:tMemo(self.__).setVisible(vValue);
-            eZTagRadioButton:tRadioButton(self.__).setVisible(vValue);
+            eZTagProgressBar:tProgressBar(self.__).setVisible(vValue);
           end;
       'width':
         if varType(vValue)=varInteger then
@@ -814,6 +840,7 @@ begin
             eZTagImage:tImage(self.__).setWidth(vValue);
             eZTagListbox:tListbox(self.__).setWidth(vValue);
             eZTagMemo:tMemo(self.__).setWidth(vValue);
+            eZTagProgressBar:tProgressBar(self.__).setWidth(vValue);
           end;
     end;
   exit(self);
@@ -864,7 +891,6 @@ begin
       eZTagGroupbox:result:=tGroupbox(self.__).getCaption();
       eZTagLabel:result:=tLabel(self.__).getCaption();
       eZTagMemo:result:=tMemo(self.__).getText();
-      eZTagRadioButton:result:=tRadioButton(self.__).getCaption();
     end;
   exit(result);
 end;
@@ -880,7 +906,6 @@ begin
       eZTagGroupbox:tGroupbox(self.__).setCaption(vText);
       eZTagLabel:tLabel(self.__).setCaption(vText);
       eZTagMemo:tMemo(self.__).setText(vText);
-      eZTagRadioButton:tRadioButton(self.__).setCaption(vText);
     end;
   exit(self);
 end;
@@ -1070,7 +1095,6 @@ begin
     self[_Index].width(vValue);
   exit(self);
 end;
-
 
 {
 ToDo:
