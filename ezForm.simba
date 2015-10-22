@@ -271,6 +271,8 @@ begin
         setLeft(vPosition.x);
         if vHandle<>'' then
           setName(vHandle);
+        if @vEventHandler<>nil then
+          setCursor(-21);
         setOnClick(@vEventHandler);
         setParent(self.__);
         if _Picture then
@@ -836,6 +838,11 @@ begin
             begin
               tGroupbox(self.__).setHint(vValue);
               tGroupbox(self.__).setShowHint(vValue<>'');
+            end;
+            eZTagImage:
+            begin
+              tImage(self.__).setHint(vValue);
+              tImage(self.__).setShowHint(vValue<>'');
             end;
             eZTagLabel:
             begin
