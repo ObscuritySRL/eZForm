@@ -1,3 +1,5 @@
+{$loadLib ProSocks}
+
 const
   eZTagButton=1;
   eZTagCheckbox=2;
@@ -10,7 +12,7 @@ const
   eZTagMemo=9;
   eZTagProgressBar=10;
 
-type tZProp=(eZPropChecked,eZPropDisabled,ezPropReadOnly,eZPropVisible);
+type tZProp=(eZPropChecked,eZPropDisabled,eZPropPassword,eZPropReadOnly,eZPropVisible);
 
 type tZComponent=record
   __:tComponent;
@@ -57,9 +59,6 @@ begin exit(self.addComponent('groupbox',vCaption,vFont,vHandle,vPosition,vDimens
 function tZForm.addImage(vFilePath,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
 begin exit(self.addComponent('image',vFilePath,'',vHandle,vPosition,vDimensions,@vEventHandler));end;
 
-function tZForm.addImageURL(vURL,vHandle:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):tZComponent;
-begin exit(self.addComponent('imageurl',vURL,'',vHandle,vPosition,vDimensions,@vEventHandler));end;
-
 function tZForm.addLabel(vCaption,vFont,vHandle:string;vPosition:tPoint):tZComponent;
 begin exit(self.addComponent('label',vCaption,vFont,vHandle,vPosition,[0,0],nil));end;
 
@@ -76,13 +75,10 @@ function tZForm.addComponent(vComponent,vCaption,vFont,vHandle:string;vPosition:
 var
   _Component:tComponent;
   _Font:tFont;
-  _File,
-    _FontColor,
+  _FontColor,
     _FontSize,
     _Index:int32;
   _FontStyle:tFontStyles;
-  _Path:string;
-  _Picture:tPicture;
   _StringArray:tStringArray;
 begin
   if vFont<>'' then
@@ -156,8 +152,8 @@ begin
         init(self.__);
         _StringArray:=explode('|',vCaption);
         for _Index to high(_StringArray) do
-          addItem(_StringArray[_Index],nil);
-        setArrowKeysTraverseList(true);
+          addItem(_StringArray[_Index],self.__);
+        setArrowKeysTraverseList(false);
         if _Font then
           setFont(_Font);
         setLeft(vPosition.x);
@@ -166,7 +162,6 @@ begin
         if length(_StringArray) then
           setItemIndex(0);
         setParent(self.__);
-        tCombobox(_Component);
         setOnClick(@vEventHandler);
         setOnKeyPress(@vEventHandler);
         setTag(eZTagCombobox);
@@ -219,15 +214,10 @@ begin
       end;
     'image':
     begin
-      if fileExists(vCaption) then
-        with _Picture do
-        begin
-          init();
-          loadFromFile(vCaption);
-        end;
       with tImage(_Component) do
       begin
         init(self.__);
+        setCaption(vCaption);
         if vDimensions[1] then
           setHeight(vDimensions[1]);
         setLeft(vPosition.x);
@@ -235,48 +225,15 @@ begin
           setName(vHandle);
         setOnClick(@vEventHandler);
         setParent(self.__);
-        if _Picture then
-          setPicture(_Picture);
-        setStretch(true);
-        setTag(eZTagImage);
-        setTop(vPosition.y);
-        if vDimensions[0] then
-          setWidth(vDimensions[0]);
-        result:=tZComponent(_Component);
-        insert(tZComponent(_Component),ezFormComponentArray);
-      end;
-    end;
-    'imageurl':
-    begin
-      _Path:=includePath+'eZForm Resources\'+replaceRegExpr('\W+',vCaption,'_',false);
-      createDirectory(includePath+'eZForm Resources');
-      if directoryExists(includePath+'eZForm Resources') and ((_File:=rewriteFile(_Path,true))<>-1) then
-      begin
-        writeFileString(_File,getPage(vCaption));
-        closeFile(_File);
-      end;
-      if fileExists(_Path) then
-        with _Picture do
-        begin
-          init();
+        if execRegExpr('^http:\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$',vCaption) then
           try
-            loadFromFile(_Path);
-          except end;
-        end;
-      with tImage(_Component) do
-      begin
-        init(self.__);
-        if vDimensions[1] then
-          setHeight(vDimensions[1]);
-        setLeft(vPosition.x);
-        if vHandle<>'' then
-          setName(vHandle);
-        if @vEventHandler<>nil then
-          setCursor(-21);
-        setOnClick(@vEventHandler);
-        setParent(self.__);
-        if _Picture then
-          setPicture(_Picture);
+            getPicture().loadFromURL(vCaption);
+          except end
+        else
+          if fileExists(vCaption) then
+            try
+              getPicture().loadFromFile(vCaption);
+            except end;
         setStretch(true);
         setTag(eZTagImage);
         setTop(vPosition.y);
@@ -490,6 +447,11 @@ begin
       'label':result:=self.__.getTag()=eZTagLabel;
       'listbox':result:=self.__.getTag()=eZTagListbox;
       'memo':result:=self.__.getTag()=eZTagMemo;
+      'password':
+        case self.__.getTag() of
+          eZTagEdit:result:=tEdit(self.__).getPasswordChar()<>#0;
+          eZTagMemo:result:=tMemo(self.__).getPasswordChar()<>#0;
+        end;
       'progressbar':result:=self.__.getTag()=eZTagProgressBar;
       'readonly':
         case self.__.getTag() of
@@ -514,6 +476,16 @@ begin
   exit(result);
 end;
 
+function tZComponent.checked():boolean;
+begin
+  exit(self.prop('checked'));
+end;
+
+function tZComponent.checked(vChecked:boolean):tZComponent;overload;
+begin
+  exit(self.prop('checked',vChecked));
+end;
+
 function tZComponent.equals(vComponent:tZComponent):boolean;
 begin
   exit(self.__=vComponent.__);
@@ -528,14 +500,24 @@ begin
   exit(result);
 end;
 
+function tZComponent.handle():string;
+begin
+  exit(self.prop('handle'));
+end;
+
+function tZComponent.handle(vHandle:string):tZComponent;overload;
+begin
+  exit(self.prop('handle',vHandle));
+end;
+
 function tZComponent.height():int32;
 begin
   exit(self.prop('height'));
 end;
 
-function tZComponent.height(vValue:int32):tZComponent;overload;
+function tZComponent.height(vHeight:int32):tZComponent;overload;
 begin
-  exit(self.prop('height',vValue));
+  exit(self.prop('height',vHeight));
 end;
 
 function tZComponent.hide():tZComponent;
@@ -554,6 +536,16 @@ begin
   self.prop('offsetleft',vPosition.x);
   self.prop('offsettop',vPosition.y);
   exit(self);
+end;
+
+function tZComponent.password():boolean;
+begin
+  exit(self.prop('password'));
+end;
+
+function tZComponent.password(vValue:boolean):tZComponent;overload;
+begin
+  exit(self.prop('password',vValue));
 end;
 
 function tZComponent.position():tPoint;
@@ -658,6 +650,21 @@ begin
           eZTagMemo:result:=tMemo(self.__).getTop();
           eZTagProgressBar:result:=tProgressBar(self.__).getTop();
         end;
+      'password':
+        case self.__.getTag() of
+          eZTagEdit:result:=tEdit(self.__).getPasswordChar()<>#0;
+          eZTagMemo:result:=tMemo(self.__).getPasswordChar()<>#0;
+        end;
+      'readonly':
+        case self.__.getTag() of
+          eZTagCombobox:result:=tCombobox(self.__).getReadOnly();
+          eZTagEdit:result:=tEdit(self.__).getReadOnly();
+          eZTagMemo:result:=tMemo(self.__).getReadOnly();
+        end;
+      'src':
+        case self.__.getTag() of
+          eZTagImage:result:=tImage(self.__).getCaption();
+        end;
       'tagname':
         case self.__.getTag() of
           eZTagButton:result:='button';
@@ -670,12 +677,6 @@ begin
           eZTagListbox:result:='listbox';
           eZTagMemo:result:='memo';
           eZTagProgressBar:result:='progressbar';
-        end;
-      'readonly':
-        case self.__.getTag() of
-          eZTagCombobox:result:=tCombobox(self.__).getReadOnly();
-          eZTagEdit:result:=tEdit(self.__).getReadOnly();
-          eZTagMemo:result:=tMemo(self.__).getReadOnly();
         end;
       'value':
         case self.__.getTag() of
@@ -753,6 +754,20 @@ begin
             eZTagListbox:tListbox(self.__).setEnabled(not vValue);
             eZTagMemo:tMemo(self.__).setEnabled(not vValue);
           end;
+      'handle':
+        if varType(vValue)=varString then
+          case self.__.getTag() of
+            eZTagButton:tButton(self.__).setName(vValue);
+            eZTagCheckbox:tCheckbox(self.__).setName(vValue);
+            eZTagCombobox:tCombobox(self.__).setName(vValue);
+            eZTagEdit:tEdit(self.__).setName(vValue);
+            eZTagGroupbox:tGroupbox(self.__).setName(vValue);
+            eZTagImage:tImage(self.__).setName(vValue);
+            eZTagLabel:tLabel(self.__).setName(vValue);
+            eZTagListbox:tListbox(self.__).setName(vValue);
+            eZTagMemo:tMemo(self.__).setName(vValue);
+            eZTagProgressBar:tProgressBar(self.__).setName(vValue);
+          end;
       'height':
         if varType(vValue)=varInteger then
           case self.__.getTag() of
@@ -803,12 +818,43 @@ begin
             eZTagMemo:tMemo(self.__).setTop(vValue);
             eZTagProgressBar:tProgressBar(self.__).setTop(vValue);
           end;
+      'password':
+        if varType(vValue)=varBoolean then
+          case self.__.getTag() of
+            eZTagEdit:
+              if vValue then
+                tEdit(self.__).setPasswordChar(chr(0149))
+              else
+                tEdit(self.__).setPasswordChar(chr(0));
+            eZTagMemo:
+              if vValue then
+                tMemo(self.__).setPasswordChar(chr(0149))
+              else
+                tMemo(self.__).setPasswordChar(chr(0));
+          end;
       'readonly':
         if varType(vValue)=varBoolean then
           case self.__.getTag() of
             eZTagCombobox:tCombobox(self.__).setReadOnly(vValue);
             eZTagEdit:tEdit(self.__).setReadOnly(vValue);
             eZTagMemo:tMemo(self.__).setReadOnly(vValue);
+          end;
+      'src':
+        if varType(vValue)=varString then
+          case self.__.getTag() of
+            eZTagImage:
+            begin
+              tImage(self.__).setCaption(vValue);
+              if execRegExpr('^http:\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$',vValue) then
+                try
+                  tImage(self.__).getPicture().loadFromURL(vValue);
+                except end
+              else
+                if fileExists(vValue) then
+                  try
+                    tImage(self.__).getPicture().loadFromFile(vValue);
+                  except end;
+            end;
           end;
       'title':
         if varType(vValue)=varString then
@@ -914,6 +960,7 @@ begin
     case vProperty of
       eZPropChecked:self.prop('checked',true);
       eZPropDisabled:self.prop('disabled',true);
+      eZPropPassword:self.prop('password',true);
       eZPropReadOnly:self.prop('readonly',true);
       eZPropVisible:self.prop('visible',true);
     end;
@@ -940,6 +987,16 @@ end;
 function tZComponent.show():tZComponent;
 begin
   exit(self.prop('visible',true));
+end;
+
+function tZComponent.src():string;
+begin
+  exit(self.prop('src'));
+end;
+
+function tZComponent.src(vFilePath:string):tZComponent;overload;
+begin
+  exit(self.prop('src',vFilePath));
 end;
 
 function tZComponent.text():string;
@@ -977,9 +1034,9 @@ begin
   exit(self.prop('width'));
 end;
 
-function tZComponent.width(vValue:int32):tZComponent;overload;
+function tZComponent.width(vWidth:int32):tZComponent;overload;
 begin
-  exit(self.prop('width',vValue));
+  exit(self.prop('width',vWidth));
 end;
 
 function tZComponent.val():variant;
@@ -1057,12 +1114,12 @@ begin
   exit(result);
 end;
 
-function tZComponentArray.height(vValue:int32):tZComponentArray;
+function tZComponentArray.height(vHeight:int32):tZComponentArray;
 var
   _Index:int32;
 begin
   for _Index to high(self) do
-    self[_Index].height(vValue);
+    self[_Index].height(vHeight);
   exit(self);
 end;
 
@@ -1149,14 +1206,66 @@ begin
   exit(self);
 end;
 
-function tZComponentArray.width(vValue:int32):tZComponentArray;
+function tZComponentArray.width(vWidth:int32):tZComponentArray;
 var
   _Index:int32;
 begin
   for _Index to high(self) do
-    self[_Index].width(vValue);
+    self[_Index].width(vWidth);
   exit(self);
 end;
+
+(*
+  tPicture Methods
+*)
+
+procedure tPicture.loadFromURL(vURL:string);
+function getPage(vURL:string):string;override;
+var
+  _Result:proMemoryStruct;
+  _Socket:sslSocket;
+begin
+  pro_initSocket(_Socket, nil, nil, nil, nil);
+  pro_createSocket(_Socket, '');
+  pro_setSSL(_Socket, false, false, true);
+  pro_setURL(_Socket,vURL);
+  pro_doGetEx(_Socket,_Result);
+  {$ifDef lape}
+  setLength(Result,_Result.size);
+  memMove(_Result.memory^,Result[1],_Result.size);
+  {$else}
+  Result :=_Result.memory;
+  {$endIf}
+  try
+    pro_FreeSocket(_Socket);
+  except end;
+end;
+var
+  _FileStream:tFileStream;
+  _Path,
+    _Picture:string;
+begin
+  if execRegExpr('^http:\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$',vURL) then
+  begin
+    _Path:=includePath+'eZForm Resources\'+replaceRegExpr('\W+',vURL,'_',false);
+    createDirectory(includePath+'eZForm Resources');
+    if directoryExists(includePath+'eZForm Resources') then
+    begin
+      _FileStream.init(_Path,$FF00 or $0001 or $0020);
+      try
+        _Picture:=getPage(vURL);
+        _FileStream.WriteBuffer(_Picture[1],Length(_Picture));
+      finally
+        _FileStream.free();
+      end;
+    end
+    if fileExists(_Path) then
+      try
+        self.loadFromFile(_Path);
+      except end;
+  end;
+end;
+
 
 {
 ToDo:
