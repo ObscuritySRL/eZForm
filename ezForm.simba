@@ -273,6 +273,9 @@ begin
       begin
         init(self.__);
         setCaption(vCaption);
+        setColor(255);
+        if compareMem(@[0,0],@vDimensions,8) then
+          setAutoSize(true);
         if vDimensions[1] then
           setHeight(vDimensions[1]);
         setLeft(vPosition.x);
@@ -294,6 +297,7 @@ begin
         setStretch(true);
         setTag(eZTagImage);
         setTop(vPosition.y);
+        setTransparent(true);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
         insert(eZElement(_Element),self.___);
@@ -304,17 +308,24 @@ begin
       with tLabel(_Element) do
       begin
         init(self.__);
+        if not compareMem(@[0,0],@vDimensions,8) then
+          setAutoSize(false);
         setCaption(replaceRegExpr('^$',vCaption,#0,false));
         if _Font then
           setFont(_Font);
+        if vDimensions[1] then
+          setHeight(vDimensions[1]);
         setLeft(vPosition.x);
         if vID<>'' then
           setName(vID);
         setParent(self.__);
         setTag(eZTagLabel);
         setTop(vPosition.y);
+        if vDimensions[0] then
+          setWidth(vDimensions[0]);
         insert(eZElement(_Element),self.___);
         result:=eZElement(_Element);
+        WriteLayoutDebugReport('as');
       end;
     'listbox':
       with tListbox(_Element) do
@@ -610,7 +621,7 @@ begin
   exit(self);
 end;}
 
-procedure eZForm.show();
+function eZForm.show():eZForm;
 begin
   if self.__.getTag()=eZTagForm then
     self.prop('visible',true)
@@ -620,6 +631,7 @@ begin
       __eZForm:=self;
       sync(eZFormShow);
     end;
+  exit(self);
 end;
 
 function eZForm.text():string;
@@ -746,7 +758,8 @@ end;
 
 function eZElement.hide():eZElement;
 begin
-  exit(self.prop('visible',false));
+  tButton(self.__).hide();
+  exit(self);
 end;
 
 function eZElement.id():string;
@@ -1119,7 +1132,11 @@ begin
       'visible':
         if varType(vValue)=varBoolean then
           case self.__.getTag() of
-            eZTagButton..eZTagProgressbar,eZTagTabList:tImage(self.__).setVisible(vValue);
+            eZTagButton..eZTagProgressbar,eZTagTabList:
+              if vValue then
+                tButton(self.__).show()
+              else
+                tButton(self.__).hide();
           end;
       'width':
         if varType(vValue)=varInteger then
@@ -1166,7 +1183,8 @@ end;
 
 function eZElement.show():eZElement;
 begin
-  exit(self.prop('show',true));
+  tButton(self.__).show();
+  exit(self);
 end;
 
 function eZElement.style():string;
