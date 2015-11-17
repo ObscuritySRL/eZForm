@@ -43,7 +43,7 @@ var
   _Index:Int32;
 begin
   for _Index to high(__eZFormArray) do
-    __eZFormArray[_Index].__.close();
+   __eZFormArray[_Index].__.close();
 end;
 
 procedure eZFormShow();native;
@@ -297,7 +297,6 @@ begin
         setStretch(true);
         setTag(eZTagImage);
         setTop(vPosition.y);
-        setTransparent(true);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
         insert(eZElement(_Element),self.___);
@@ -325,7 +324,6 @@ begin
           setWidth(vDimensions[0]);
         insert(eZElement(_Element),self.___);
         result:=eZElement(_Element);
-        WriteLayoutDebugReport('as');
       end;
     'listbox':
       with tListbox(_Element) do
@@ -333,7 +331,7 @@ begin
         init(self.__);
         _StringArray:=explode('|',vCaption);
         for _Index to high(_StringArray) do
-          addItem(_StringArray[_Index],nil);
+          getItems().append(_StringArray[_Index]);
         setCaption(replaceRegExpr('^$',vCaption,#0,false));
         setClickOnSelChange(true);
         if _Font then
@@ -399,9 +397,21 @@ begin
       end;
     'tab':
     begin
+      _StringArray:=explode('|',vCaption);
       with tPageControl(_Parent) do
       begin
         init(self.__);
+        for _Index to high(_StringArray) do
+        begin
+          with tTabSheet(_Element:=addTabSheet()) do
+          begin
+            setCaption(replaceRegExpr('^$',_StringArray[_Index],#0,false));
+            if vID<>'' then
+              setName(vID+toStr(_Index));
+            setTag(eZTagTab);
+            insert(eZElement(_Element),self.___);
+          end;
+        end;
         if vDimensions[1] then
           setHeight(vDimensions[1]);
         if _Font then
@@ -417,20 +427,6 @@ begin
           setWidth(vDimensions[0]);
         insert(eZElement(_Parent),self.___);
         result:=eZElement(_Parent);
-      end;
-      _StringArray:=explode('|',vCaption);
-      for _Index to high(_StringArray) do
-      begin
-        with tTabSheet(_Element) do
-        begin
-          init(self.__);
-          setCaption(_StringArray[_Index]);
-          if vID<>'' then
-            setName(vID+toStr(_Index));
-          setParent(_Parent);
-          setTag(eZTagTab);
-          insert(eZElement(_Element),self.___);
-        end;
       end;
     end;
   end;
@@ -449,8 +445,7 @@ begin
     with self.__ do
     begin
       init(nil);
-      setBorderIcons([biSystemMenu,biMinimize]);
-      setBorderStyle(3);
+      setBorderIcons([biSystemMenu]);
       setCaption(vTitle:=replaceRegExpr('^$',vTitle,'eZForm',false));
       setPosition(poScreenCenter);
       setTag(eZTagForm*-1);
@@ -489,8 +484,14 @@ begin
   setLength(result,self.__.getComponentCount());
   if execRegExpr('^#[\w-]+$',vSelector:=lowercase(vSelector)) then
   begin
-    result[0]:=eZElement(self.__.findComponent(replaceRegExpr('^#([\w-]+)$',vSelector,'$1',true)));
-    _ResultIndex:=1;
+    vSelector:=replaceRegExpr('^#([\w-]+)$',vSelector,'$1',true);
+    for _Index to high(self.___) do
+      if lowercase(self.___[_Index].id())=vSelector then
+      begin
+        result[0]:=self.___[_Index];
+        _ResultIndex:=1;
+        break;
+      end;
   end
   else if execRegExpr('^[A-z]+$',vSelector) then
     for _Index to high(self.___) do
@@ -592,11 +593,32 @@ begin
   exit(self);
 end;
 
-{function eZForm.remove(vElement:eZElement):eZForm;
+function eZForm.remove(vElement:eZElement):eZForm;
+var
+  _ElementIndex,
+    _FormIndex:int32;
 begin
-  self.___:=self.___.delete(vElement);
-  vElement.hide();
-  vElement.__.free();
+  for _FormIndex:=0 to high(__eZFormArray) do
+    if __eZFormArray[_FormIndex].__=self.__ then
+      for _ElementIndex:=0 to high(self.___) do
+        if self.___[_ElementIndex].__=vElement.__ then
+        begin
+          self.___:=self.___.delete(vElement);
+          __eZFormArray[_FormIndex]:=self;
+          vElement.hide();
+          vElement.__.free();
+          _FormIndex:=high(__eZFormArray);
+          break;
+        end;
+  exit(self);
+end;
+
+function eZForm.remove(vElementArray:eZElementArray):eZForm;overload;
+var
+  _Index:int32;
+begin
+  for _Index to high(vElementArray) do
+    self.remove(vElementArray[_Index]);
   exit(self);
 end;
 
@@ -604,27 +626,16 @@ function eZForm.remove(vSelector:string):eZForm;overload;
 var
   _Index:int32;
 begin
-  if execRegExpr('^#[\w-]+$',vSelector:=lowercase(vSelector)) then
-  begin
-    vSelector:=replaceRegExpr('^#([\w-]+)$',vSelector,'$1',true);
-    for _Index to high(self.___) do
-      if self.___[_Index].id()=vSelector then
-      begin
-        self.remove(self.___[_Index]);
-        break;
-      end;
-  end
-  else if execRegExpr('^[A-z]+$',vSelector) then
-    for _Index to high(self.___) do
-      if self.___[_Index].tagName()=vSelector then
-        self.remove(self.___[_Index]);
+  self.remove(self.find(vSelector));
   exit(self);
-end;}
+end;
+
+
 
 function eZForm.show():eZForm;
 begin
   if self.__.getTag()=eZTagForm then
-    self.prop('visible',true)
+    self.__.show()
   else
     if self.__<>nil then
     begin
@@ -677,6 +688,40 @@ end;
 (*
   eZElement Methods
 *)
+
+function eZElement.append(vString:variant):eZElement;
+begin
+  if toStr(vString)<>'' then
+    case self.__.getTag() of
+      eZTagCombobox:tCombobox(self.__).getItems().append(toStr(vString));
+      eZTagListbox:tListbox(self.__).getItems().append(toStr(vString));
+      else
+        self.text(self.text()+toStr(vString));
+    end;
+  exit(self);
+end;
+
+function eZElement.empty():eZElement;
+begin
+  case self.__.getTag() of
+    eZTagCombobox:tCombobox(self.__).clear();
+    eZTagListbox:tListbox(self.__).clear();
+  end;
+  exit(self);
+end;
+
+function eZElement.empty(vIndex:int32):eZElement;overload;
+begin
+  case self.__.getTag() of
+    eZTagCombobox:
+      if vIndex<=tCombobox(self.__).getItems().getCount() then
+        tCombobox(self.__).getItems().delete(vIndex);
+    eZTagListbox:
+      if vIndex<=tListbox(self.__).getItems().getCount() then
+        tListbox(self.__).getItems().delete(vIndex);
+  end;
+  exit(self);
+end;
 
 function eZElement.be(vProperty:string):boolean;
 begin
@@ -890,8 +935,8 @@ begin
         end;
       'multiple':
         case self.__.getTag() of
-          eZTagListbox:result:=tListbox(self.__).getMultiSelect();
           eZTagMemo:result:=tMemo(self.__).getWantReturns();
+          eZTagTabList:tPageControl(self.__).getMultiLine();
         end;
       'offsetleft':
         case self.__.getTag() of
@@ -913,7 +958,7 @@ begin
         end;
       'select':
         case self.__.getTag() of
-          eZTagListbox:result:=tListbox(self.__).getSelectedText();
+          eZTagListbox:result:=tListbox(self.__).getItemIndex();
           eZTagTabList:result:=tPageControl(self.__).getPageIndex();
         end;
       'src':
@@ -960,16 +1005,20 @@ begin
       'text':
         case self.__.getTag() of
           eZTagButton..eZTagCheckbox,eZTagGroupbox,eZTagLabel,eZTagTab:result:=tButton(self.__).getCaption();
+          eZTagListBox:result:=tListbox(self.__).getSelectedText();
+          eZTagTabList:result:=tPageControl(self.__).getActivePage().getCaption();
         end;
       'title':
         case self.__.getTag() of
           eZTagButton..eZTagTabList:tButton(self.__).getHint();
         end;
-      'value':
+      'val','value':
         case self.__.getTag() of
           eZTagCombobox..eZTagEdit,eZTagMemo:result:=tCombobox(self.__).getText();
-          eZTagListbox:result:=tListbox(self.__).getSelectedText();
+          eZTagListbox:result:=tListbox(self.__).getItemIndex();
           eZTagProgressBar:result:=tProgressBar(self.__).getPosition();
+          eZTagTab:result:=tTabSheet(self.__).getPageIndex();
+          eZTagTabList:result:=tPageControl(self.__).getPageIndex();
         end;
       'visible':
         case self.__.getTag() of
@@ -1029,8 +1078,8 @@ begin
       'multiple':
         if varType(vValue)=varBoolean then
           case self.__.getTag() of
-            eZTagListbox:tListbox(self.__).setMultiSelect(vValue);
             eZTagMemo:tMemo(self.__).setWantReturns(vValue);
+            eZTagTabList:tPageControl(self.__).setMultiLine(vValue);
           end;
       'offsetleft':
         if varType(vValue)=varInteger then
@@ -1061,6 +1110,7 @@ begin
       'select':
         if varType(vValue)=varInteger then
           case self.__.getTag() of
+            eZTagListbox:tListbox(self.__).setItemIndex(vValue);
             eZTagTabList:tPageControl(self.__).setPageIndex(vValue);
           end;
       'src':
@@ -1107,6 +1157,8 @@ begin
         if (varType(vValue)=varInteger) or (varType(vValue)=varString) then
           case self.__.getTag() of
             eZTagButton..eZTagCheckbox,eZTagGroupbox,eZTagLabel,eZTagTab:tButton(self.__).setCaption(toStr(vValue));
+            eZTagListBox:tListBox(self.__).getItems().setStrings(tListBox(self.__).getItemIndex(),vValue);
+            eZTagTabList:tPageControl(self.__).getActivePage().setCaption(vValue);
           end;
       'title':
         if varType(vValue)=varString then
@@ -1179,6 +1231,43 @@ end;
 function eZElement.select(vSelect:int32):eZElement;overload;
 begin
   exit(self.prop('select',vselect));
+end;
+
+function eZElement.selections():tStringArray;
+var
+  _Count,
+    _Index:int32;
+  _Strings:tStrings;
+begin
+  case self.__.getTag() of
+    eZTagCombobox:_Strings:=tCombobox(self.__).getItems();
+    eZTagListbox:_Strings:=tListbox(self.__).getItems();
+  end;
+  if _Strings<>nil then
+  begin
+    setLength(result,_Count:=_Strings.getCount());
+    for _Index to _Count-1 do
+      result[_Index]:=_Strings.getStrings(_Index);
+  end;
+  exit(result);
+end;
+
+function eZElement.selections(vValues:tStringArray):eZElement;overload;
+var
+  _Index:int32;
+  _Strings:tStrings;
+begin
+  case self.__.getTag() of
+    eZTagCombobox:_Strings:=tCombobox(self.__).getItems();
+    eZTagListbox:_Strings:=tListbox(self.__).getItems();
+  end;
+  if _Strings<>nil then
+  begin
+    _Strings.clear();
+    for _Index to high(vValues) do
+      _Strings.append(vValues[_Index]);
+  end;
+  exit(result);
 end;
 
 function eZElement.show():eZElement;
