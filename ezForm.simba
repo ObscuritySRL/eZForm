@@ -701,28 +701,6 @@ begin
   exit(self);
 end;
 
-function eZElement.empty():eZElement;
-begin
-  case self.__.getTag() of
-    eZTagCombobox:tCombobox(self.__).clear();
-    eZTagListbox:tListbox(self.__).clear();
-  end;
-  exit(self);
-end;
-
-function eZElement.empty(vIndex:int32):eZElement;overload;
-begin
-  case self.__.getTag() of
-    eZTagCombobox:
-      if vIndex<=tCombobox(self.__).getItems().getCount() then
-        tCombobox(self.__).getItems().delete(vIndex);
-    eZTagListbox:
-      if vIndex<=tListbox(self.__).getItems().getCount() then
-        tListbox(self.__).getItems().delete(vIndex);
-  end;
-  exit(self);
-end;
-
 function eZElement.be(vProperty:string):boolean;
 begin
   if self.__<>nil then
@@ -762,9 +740,28 @@ begin
   exit(self.prop('cols'));
 end;
 
-function eZElement.cols(vCols:int32):eZElement;overload;
+function eZElement.copy():eZElement;
 begin
-  exit(self.prop('cols',vCols));
+  case self.__.getTag() of
+    eZTagEdit,eZTagMemo:tEdit(self.__).copyToClipboard();
+  end;
+  exit(self);
+end;
+
+function eZElement.cut():eZElement;
+begin
+  case self.__.getTag() of
+    eZTagEdit,eZTagMemo:tEdit(self.__).cutToClipboard();
+  end;
+  exit(self);
+end;
+
+function eZElement.paste():eZElement;
+begin
+  case self.__.getTag() of
+    eZTagEdit,eZTagMemo:tEdit(self.__).pasteFromClipboard();
+  end;
+  exit(self);
 end;
 
 function eZElement.disabled():boolean;
@@ -775,6 +772,28 @@ end;
 function eZElement.disabled(vDisabled:boolean):eZElement;overload;
 begin
   exit(self.prop('disabled',vDisabled));
+end;
+
+function eZElement.empty():eZElement;
+begin
+  case self.__.getTag() of
+    eZTagCombobox:tCombobox(self.__).clear();
+    eZTagListbox:tListbox(self.__).clear();
+  end;
+  exit(self);
+end;
+
+function eZElement.empty(vIndex:int32):eZElement;overload;
+begin
+  case self.__.getTag() of
+    eZTagCombobox:
+      if vIndex<=tCombobox(self.__).getItems().getCount() then
+        tCombobox(self.__).getItems().delete(vIndex);
+    eZTagListbox:
+      if vIndex<=tListbox(self.__).getItems().getCount() then
+        tListbox(self.__).getItems().delete(vIndex);
+  end;
+  exit(self);
 end;
 
 function eZElement.equals(vElement:eZElement):boolean;
@@ -1233,21 +1252,51 @@ begin
   exit(self.prop('select',vselect));
 end;
 
+function eZElement.selectAll():eZElement;
+begin
+  case self.__.getTag() of
+    eZTagEdit,eZTagMemo:
+    begin
+      tEdit(self.__).setFocus();
+      tEdit(self.__).setSelStart(0);
+      tEdit(self.__).setSelLength(2147483647);
+     end;
+  end;
+  exit(self);
+end;
+
 function eZElement.selections():tStringArray;
 var
   _Count,
-    _Index:int32;
+    _ElementIndex,
+    _FormIndex,
+    _ResultIndex:int32;
   _Strings:tStrings;
 begin
   case self.__.getTag() of
     eZTagCombobox:_Strings:=tCombobox(self.__).getItems();
     eZTagListbox:_Strings:=tListbox(self.__).getItems();
+    eZTagTabList:
+    begin
+      for _FormIndex to high(__eZFormArray) do
+        if __eZFormArray[_FormIndex].__=self.__.getOwner() then
+        begin
+          setLength(result,tPageControl(self.__).getPageCount());
+          for _ElementIndex to high(__eZFormArray[_FormIndex].___) do
+            if __eZFormArray[_FormIndex].___[_ElementIndex].parent().__=self.__ then
+            begin
+              result[_ResultIndex]:=__eZFormArray[_FormIndex].___[_ElementIndex].text();
+              _ResultIndex+=1;
+            end;
+          break;
+        end;
+    end;
   end;
   if _Strings<>nil then
   begin
     setLength(result,_Count:=_Strings.getCount());
-    for _Index to _Count-1 do
-      result[_Index]:=_Strings.getStrings(_Index);
+    for _ElementIndex to _Count-1 do
+      result[_ElementIndex]:=_Strings.getStrings(_ElementIndex);
   end;
   exit(result);
 end;
@@ -1549,11 +1598,6 @@ begin
   exit(self);
 end;
 
-
-
-
-
-
 (*
   tObject Methods
 *)
@@ -1568,30 +1612,16 @@ end;
 *)
 
 procedure tPicture.loadFromURL(vURL:string);
-function getPage(vURL:string):string;override;
-var
-  _Result:proMemoryStruct;
-  _Socket:sslSocket;
+function toString(vMemoryStruct:proMemoryStruct):string;
 begin
-  pro_initSocket(_Socket, nil, nil, nil, nil);
-  pro_createSocket(_Socket,'');
-  pro_setSSL(_Socket, false,false,true);
-  pro_setURL(_Socket,vURL);
-  pro_doGetEx(_Socket,_Result);
-  {$ifDef lape}
-  setLength(result,_Result.size);
-  memMove(_Result.memory^,result[1],_Result.size);
-  {$else}
-  result:=_Result.memory;
-  {$endIf}
-  try
-    pro_FreeSocket(_Socket);
-  except end;
+  setLength(result,vMemoryStruct.size);
+  memMove(vMemoryStruct.memory^,result[1],vMemoryStruct.size);
 end;
 var
   _FileStream:tFileStream;
-  _Path,
-    _Picture:string;
+  _Path:string;
+  _Response:proMemoryStruct;
+  _Socket:sslSocket;
 begin
   if execRegExpr('^https?:\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$',vURL) then
   begin
@@ -1599,13 +1629,17 @@ begin
     createDirectory(includePath+'eZForm Resources');
     if directoryExists(includePath+'eZForm Resources') then
     begin
-      _FileStream.init(_Path,$FF00 or $0001 or $0020);
+      _Socket.init();
+      _Socket.setURLFollow(true);
+      _Socket.setURL(vURL);
+      _Socket.doGet(_Response);
       try
-        _Picture:=getPage(vURL);
-        _FileStream.WriteBuffer(_Picture[1],Length(_Picture));
+        _FileStream.init(_Path,$FF00 or $0001 or $0020);
+        _FileStream.WriteBuffer(toString(_Response)[1],_Response.size);
       finally
         _FileStream.free();
       end;
+      _Socket.free();
     end
     if fileExists(_Path) then
     begin
