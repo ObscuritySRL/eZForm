@@ -409,6 +409,7 @@ begin
             if vID<>'' then
               setName(vID+toStr(_Index));
             setTag(eZTagTab);
+            setOnShow(@vEventHandler);
             insert(eZElement(_Element),self.___);
           end;
         end;
@@ -419,7 +420,6 @@ begin
         setLeft(vPosition.x);
         if vID<>'' then
           setName(vID);
-        setOnChanging(@vEventHandler);
         setParent(self.__);
         setTag(eZTagTabList);
         setTop(vPosition.y);
@@ -446,6 +446,7 @@ begin
     begin
       init(nil);
       setBorderIcons([biSystemMenu]);
+      setBorderStyle(4);
       setCaption(vTitle:=replaceRegExpr('^$',vTitle,'eZForm',false));
       setPosition(poScreenCenter);
       setTag(eZTagForm*-1);
@@ -551,7 +552,7 @@ begin
       'offsetleft':result:=self.__.getLeft();
       'offsettop':result:=self.__.getTop();
       'visible':result:=self.__.getVisible();
-      'width':result:=self.__.getHeight();
+      'width':result:=self.__.getWidth();
     end;
   exit(result);
 end;
@@ -877,14 +878,30 @@ begin
 end;
 
 function eZElement.parent():eZElement;
+var
+  _ElementIndex,
+    _FormIndex:int32;
+  _Form:tForm;
 begin
-  result.__:=tButton(self.__).getParent();
+  _Form:=self.__.getForm();
+  for _FormIndex to high(__eZFormArray) do
+    if _Form=__eZFormArray[_FormIndex].__ then
+    begin
+      for _ElementIndex to high(__eZFormArray[_FormIndex].___) do
+        if self.__=__eZFormArray[_FormIndex].___[_ElementIndex].__ then
+        begin
+          result:=__eZFormArray[_FormIndex].___[_ElementIndex];
+          break;
+        end;
+      break;
+    end;
   exit(result);
 end;
 
 function eZElement.parent(vElement:eZElement):eZElement;overload;
 begin
-  tButton(self.__).setParent(vElement.__);
+  if self.__.getForm()=vElement.__.getForm() then
+    tButton(self.__).setParent(vElement.__);
   exit(self);
 end;
 
@@ -894,15 +911,15 @@ var
   _Form:tForm;
   _Index:int32;
 begin
-  _Form:=self.__.getOwner();
+  _Form:=self.__.getForm();
   for _Index to high(__eZFormArray) do
     if _Form=__eZFormArray[_Index].__ then
     begin
       _ElementArray:=__eZFormArray[_Index].find(vSelector);
       break;
     end;
-  if (length(_ElementArray)<>0) and (_ElementArray[0].__<>nil) then
-    tButton(self.__).setParent(_ElementArray[0].__);
+  if length(_ElementArray) then
+    self.parent(_ElementArray[0]);
   exit(self);
 end;
 
@@ -964,7 +981,7 @@ begin
         end;
       'offsettop':
         case self.__.getTag() of
-          eZTagButton..eZTagTabList:result:=tButton(self.__).getTop();
+          eZTagButton..eZTagProgressbar,eZTagTabList:result:=tButton(self.__).getTop();
           eZTagTab:result:=tTabSheet(self.__).getParent().getTop();
         end;
       'password':
@@ -977,8 +994,8 @@ begin
         end;
       'select':
         case self.__.getTag() of
-          eZTagListbox:result:=tListbox(self.__).getItemIndex();
-          eZTagTabList:result:=tPageControl(self.__).getPageIndex();
+          eZTagListbox,eZTagTabList:result:=self.prop('val');
+          eZTagTab:result:=self.parent().prop('val');
         end;
       'src':
         case self.__.getTag() of
@@ -1271,6 +1288,7 @@ var
     _ElementIndex,
     _FormIndex,
     _ResultIndex:int32;
+  _Form:tForm;
   _Strings:tStrings;
 begin
   case self.__.getTag() of
@@ -1278,8 +1296,9 @@ begin
     eZTagListbox:_Strings:=tListbox(self.__).getItems();
     eZTagTabList:
     begin
+      _Form:=self.__.getForm();
       for _FormIndex to high(__eZFormArray) do
-        if __eZFormArray[_FormIndex].__=self.__.getOwner() then
+        if __eZFormArray[_FormIndex].__=_Form then
         begin
           setLength(result,tPageControl(self.__).getPageCount());
           for _ElementIndex to high(__eZFormArray[_FormIndex].___) do
@@ -1596,6 +1615,19 @@ begin
   for _Index to high(self) do
     self[_Index].width(vWidth);
   exit(self);
+end;
+
+(*
+  tComponent Methods
+*)
+
+function tComponent.getForm():tComponent;
+begin
+  if self.getOwner()<>nil then
+    result:=self.getOwner().getForm()
+  else
+    result:=self;
+  exit(result);
 end;
 
 (*
