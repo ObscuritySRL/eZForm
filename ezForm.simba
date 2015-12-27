@@ -1,34 +1,45 @@
 {$loadLib ProSocks}
 
 type eZElement=record
-  __:tComponent;
+  {$IFNDEF CODEINSIGHT}
+    __:tComponent;
+  {$ENDIF}
 end;
 
 type eZElementArray=array of eZElement;
 
 type eZForm=record
-  __:tForm;
-  ___:eZElementArray;
+  {$IFNDEF CODEINSIGHT}
+    __:tForm;
+    ___:eZElementArray;
+  {$ENDIF}
 end;
 
 type eZFormArray=array of eZForm;
 
-type eZProp=(eZPropChecked,eZPropDisabled,eZPropPassword,eZPropReadOnly,eZPropVisible);
+type eZProp=(
+  eZPropChecked,
+  eZPropDisabled,
+  eZPropPassword,
+  eZPropReadOnly,
+  eZPropVisible
+);
 
-const
-  eZTagButton=1;
-  eZTagCheckbox=2;
-  eZTagCombobox=3;
-  eZTagEdit=4;
-  eZTagForm=5;
-  eZTagGroupbox=6;
-  eZTagImage=7;
-  eZTagLabel=8;
-  eZTagListBox=9;
-  eZTagMemo=10;
-  eZTagProgressBar=11;
-  eZTagTab=12;
-  eZTagTabList=13;
+type eZTag=(
+  eZTagButton,
+  eZTagCheckbox,
+  eZTagCombobox,
+  eZTagEdit,
+  eZTagForm,
+  eZTagGroupbox,
+  eZTagImage,
+  eZTagLabel,
+  eZTagListBox,
+  eZTagMemo,
+  eZTagProgressBar,
+  eZTagTab,
+  eZTagTabList
+);
 
 var
   __eZForm:eZForm;
@@ -54,7 +65,7 @@ var
     _TopMost:int32=2147483647;
   _Index:int32;
 begin
-  __eZForm.__.setTag(eZTagForm);
+  __eZForm.__.setTag(ord(eZTagForm));
   if length(__eZForm.___) then
   begin
     for _Index to high(__eZForm.___) do
@@ -177,7 +188,7 @@ begin
           setName(vID);
         setOnClick(@vEventHandler);
         setParent(self.__);
-        setTag(eZTagButton);
+        setTag(ord(eZTagButton));
         setTop(vPosition.y);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
@@ -196,7 +207,7 @@ begin
           setName(vID);
         setOnChange(@vEventHandler);
         setParent(self.__);
-        setTag(eZTagCheckbox);
+        setTag(ord(eZTagCheckbox));
         setTop(vPosition.y);
         insert(eZElement(_Element),self.___);
         result:=eZElement(_Element);
@@ -219,7 +230,7 @@ begin
         setParent(self.__);
         setOnClick(@vEventHandler);
         setOnKeyPress(@vEventHandler);
-        setTag(eZTagCombobox);
+        setTag(ord(eZTagCombobox));
         setTop(vPosition.y);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
@@ -240,7 +251,7 @@ begin
           setName(vID);
         setOnChange(@vEventHandler);
         setParent(self.__);
-        setTag(eZTagEdit);
+        setTag(ord(eZTagEdit));
         setTop(vPosition.y);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
@@ -260,7 +271,7 @@ begin
         if vID<>'' then
           setName(vID);
         setParent(self.__);
-        setTag(eZTagGroupbox);
+        setTag(ord(eZTagGroupbox));
         setTop(vPosition.y);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
@@ -295,7 +306,7 @@ begin
               getPicture().loadFromFile(vCaption);
             except end;
         setStretch(true);
-        setTag(eZTagImage);
+        setTag(ord(eZTagImage));
         setTop(vPosition.y);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
@@ -318,7 +329,7 @@ begin
         if vID<>'' then
           setName(vID);
         setParent(self.__);
-        setTag(eZTagLabel);
+        setTag(ord(eZTagLabel));
         setTop(vPosition.y);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
@@ -343,7 +354,7 @@ begin
           setName(vID);
         setOnClick(@vEventHandler);
         setParent(self.__);
-        setTag(eZTagListbox);
+        setTag(ord(eZTagListbox));
         setTop(vPosition.y);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
@@ -364,7 +375,7 @@ begin
           setName(vID);
         setOnChange(@vEventHandler);
         setParent(self.__);
-        setTag(eZTagMemo);
+        setTag(ord(eZTagMemo));
         setTop(vPosition.y);
         setWantReturns(false);
         setWordWrap(true);
@@ -388,7 +399,7 @@ begin
         if execRegExpr('^\d+$',vCaption) then
           setPosition(strToInt(vCaption));
         setStep(1);
-        setTag(eZTagProgressBar);
+        setTag(ord(eZTagProgressBar));
         setTop(vPosition.y);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
@@ -408,7 +419,7 @@ begin
             setCaption(replaceRegExpr('^$',_StringArray[_Index],#0,false));
             if vID<>'' then
               setName(vID+toStr(_Index));
-            setTag(eZTagTab);
+            setTag(ord(eZTagTab));
             setOnShow(@vEventHandler);
             insert(eZElement(_Element),self.___);
           end;
@@ -421,7 +432,7 @@ begin
         if vID<>'' then
           setName(vID);
         setParent(self.__);
-        setTag(eZTagTabList);
+        setTag(ord(eZTagTabList));
         setTop(vPosition.y);
         if vDimensions[0] then
           setWidth(vDimensions[0]);
@@ -438,6 +449,56 @@ begin
     end;
 end;
 
+
+
+function eZForm.animate(vProperty:string;vValue,vTimeout:int32):eZForm;
+var
+  _Difference,
+    _Time,
+    _Value:int32;
+  _Step:double;
+begin
+  _Time:=getSystemTime()+vTimeout;
+
+  case lowercase(vProperty) of
+    'height':_Value:=self.height();
+    'offsetleft':_Value:=self.offsetLeft();
+    'offsettop':_Value:=self.offsetTop();
+    'width':_Value:=self.width();
+  end;
+
+  _Difference:=_Value-vValue;
+
+  case lowercase(vProperty) of
+    'height':
+    begin
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.height(round(vValue+_Difference*_Step));
+      self.height(vValue);
+    end;
+    'offsetleft':
+    begin
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.offsetLeft(round(vValue+_Difference*_Step));
+      self.offsetLeft(vValue);
+    end;
+    'offsettop':
+    begin
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.offsetTop(round(vValue+_Difference*_Step));
+      self.offsetTop(vValue);
+    end;
+    'width':
+    begin
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.width(round(vValue+_Difference*_Step));
+      self.width(vValue);
+    end;
+  end;
+
+  exit(self);
+end;
+
 function eZForm.create(vTitle:string=''):eZForm;
 begin
   if self.__=nil then
@@ -449,7 +510,7 @@ begin
       setBorderStyle(4);
       setCaption(vTitle:=replaceRegExpr('^$',vTitle,'eZForm',false));
       setPosition(poScreenCenter);
-      setTag(eZTagForm*-1);
+      setTag(ord(eZTagForm)*-1);
     end;
     insert(self,__eZFormArray);
     addOnTerminate('eZFormFree');
@@ -505,6 +566,14 @@ begin
   exit(result);
 end;
 
+function eZForm.getScriptName():string;
+begin
+  result:=replaceRegExpr('(?i)([\w\s\-]+)\.simba',scriptFile,'$1',true);
+  if result='' then
+    result:='eZForm';
+  exit(result);
+end;
+
 function eZForm.height():int32;
 begin
   exit(self.prop('height'));
@@ -522,6 +591,26 @@ begin
   exit(self);
 end;
 
+function eZForm.id():string;
+begin
+  exit(self.prop('id'));
+end;
+
+function eZForm.id(vID:string):eZForm;overload;
+begin
+  exit(self.prop('id',vID));
+end;
+
+function eZForm.offsetBottom():int32;
+begin
+  exit(self.prop('offsetBottom'));
+end;
+
+function eZForm.offsetBottom(vOffsetBottom:int32):eZForm;overload;
+begin
+  exit(self.prop('offsetBottom',vOffsetBottom));
+end;
+
 function eZForm.offsetLeft():int32;
 begin
   exit(self.prop('offsetLeft'));
@@ -530,6 +619,16 @@ end;
 function eZForm.offsetLeft(vOffsetLeft:int32):eZForm;overload;
 begin
     exit(self.prop('offsetleft',vOffsetLeft));
+end;
+
+function eZForm.offsetRight():int32;
+begin
+  exit(self.prop('offsetRight'));
+end;
+
+function eZForm.offsetRight(vOffsetRight:int32):eZForm;overload;
+begin
+  exit(self.prop('offsetRight',vOffsetRight));
 end;
 
 function eZForm.offsetTop():int32;
@@ -548,9 +647,11 @@ begin
     case lowercase(vProperty) of
       'disabled':result:=self.__.getEnabled();
       'height':result:=self.__.getHeight();
-      'text':result:=self.__.getCaption();
+      'id':result:=self.__.getName();
       'offsetleft':result:=self.__.getLeft();
       'offsettop':result:=self.__.getTop();
+      'text':result:=self.__.getCaption();
+      'title':result:=self.__.getHint();
       'visible':result:=self.__.getVisible();
       'width':result:=self.__.getWidth();
     end;
@@ -566,9 +667,18 @@ begin
     'height':
       if varType(vValue)=varInteger then
         self.__.setHeight(vValue);
+    'id':
+      if varType(vValue)=varString then
+        self.__.setName(vValue);
+    'offsetbottom':
+      if (varType(vValue)=varInteger) and (vValue>self.offsetTop()) then
+        self.height(vValue-self.offsetTop());
     'offsetleft':
       if varType(vValue)=varInteger then
         self.__.setLeft(vValue);
+    'offsetright':
+      if (varType(vValue)=varInteger) and (vValue>self.offsetLeft()) then
+        self.width(vValue-self.offsetLeft());
     'offsettop':
       if varType(vValue)=varInteger then
         self.__.setTop(vValue);
@@ -631,8 +741,6 @@ begin
   exit(self);
 end;
 
-
-
 function eZForm.show():eZForm;
 begin
   if self.__.getTag()=eZTagForm then
@@ -690,14 +798,85 @@ end;
   eZElement Methods
 *)
 
+function eZElement.animate(vProperty:string;vValue,vTimeout:int32):eZElement;
+var
+  _Difference,
+    _Time,
+    _Value:int32;
+  _Step:double;
+begin
+  _Time:=getSystemTime()+vTimeout;
+  case lowercase(vProperty) of
+    'color':
+    begin
+      _Value:=self.color();
+      _Difference:=_Value-vValue;
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.color(round(vValue+_Difference*_Step));
+      self.color(vValue);
+    end;
+    'height':
+    begin
+      _Value:=self.height();
+      _Difference:=_Value-vValue;
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.height(round(vValue+_Difference*_Step));
+      self.height(vValue);
+    end;
+    'offsetbottom':
+    begin
+      _Value:=self.offsetBottom();
+      _Difference:=_Value-vValue;
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.offsetBottom(round(vValue+_Difference*_Step));
+      self.offsetBottom(vValue);
+    end;
+    'offsetleft':
+    begin
+      _Value:=self.offsetLeft();
+      _Difference:=_Value-vValue;
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.offsetLeft(round(vValue+_Difference*_Step));
+      self.offsetLeft(vValue);
+    end;
+    'offsetright':
+    begin
+      _Value:=self.offsetRight();
+      _Difference:=_Value-vValue;
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.offsetRight(round(vValue+_Difference*_Step));
+      self.offsetRight(vValue);
+    end;
+    'offsettop':
+    begin
+      _Value:=self.offsetTop();
+      _Difference:=_Value-vValue;
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.offsetTop(round(vValue+_Difference*_Step));
+      self.offsetTop(vValue);
+    end;
+    'width':
+    begin
+      _Value:=self.width();
+      _Difference:=_Value-vValue;
+      while (_Step:=(_Time-getSystemTime())/vTimeout)>0 do
+        self.width(round(vValue+_Difference*_Step));
+      self.width(vValue);
+    end;
+  end;
+  exit(self);
+end;
+
 function eZElement.append(vString:variant):eZElement;
+var
+  _Element:tComponent;
+  _ID:string;
 begin
   if toStr(vString)<>'' then
     case self.__.getTag() of
+      eZTagButton..eZTagCombobox,eZTagEdit..eZTagLabel,eZTagMemo..eZTagTabList:self.text(self.text()+toStr(vString));
       eZTagCombobox:tCombobox(self.__).getItems().append(toStr(vString));
       eZTagListbox:tListbox(self.__).getItems().append(toStr(vString));
-      else
-        self.text(self.text()+toStr(vString));
     end;
   exit(self);
 end;
@@ -705,7 +884,9 @@ end;
 function eZElement.be(vProperty:string):boolean;
 begin
   if self.__<>nil then
-    case (vProperty:=lowercase(vProperty)) of
+  begin
+    vProperty:=lowercase(vProperty);
+    case vProperty of
       'button','checkbox','combobox','edit','groupbox','image','listbox','memo','progressbar','tab','tablist':result:=self.tagName()=vProperty;
       'checked':result:=self.checked();
       'disabled':result:=self.disabled();
@@ -713,6 +894,7 @@ begin
       'readonly':result:=self.readonly();
       'visible':result:=self.visible();
     end;
+  end;
   exit(result);
 end;
 
@@ -724,6 +906,31 @@ end;
 function eZElement.checked(vChecked:boolean):eZElement;overload;
 begin
   exit(self.prop('checked',vChecked));
+end;
+
+function eZElement.children():eZElementArray;
+var
+  _ElementIndex,
+    _FormIndex,
+    _ResultIndex:int32;
+  _Form:tForm;
+
+begin
+  _Form:=self.__.getForm();
+  for _FormIndex to high(__eZFormArray) do
+    if _Form=__eZFormArray[_FormIndex].__ then
+    begin
+      setLength(result,length(__eZFormArray[_FormIndex].___));
+      for _ElementIndex to high(__eZFormArray[_FormIndex].___) do
+        if self.__=tButton(__eZFormArray[_FormIndex].___[_ElementIndex].__).getParent() then
+        begin
+          result[_ResultIndex]:=__eZFormArray[_FormIndex].___[_ElementIndex];
+          _ResultIndex+=1;
+        end;
+      setLength(result,_ResultIndex);
+      break;
+    end;
+  exit(result);
 end;
 
 function eZElement.color():int32;
@@ -753,14 +960,6 @@ function eZElement.cut():eZElement;
 begin
   case self.__.getTag() of
     eZTagEdit,eZTagMemo:tEdit(self.__).cutToClipboard();
-  end;
-  exit(self);
-end;
-
-function eZElement.paste():eZElement;
-begin
-  case self.__.getTag() of
-    eZTagEdit,eZTagMemo:tEdit(self.__).pasteFromClipboard();
   end;
   exit(self);
 end;
@@ -837,6 +1036,40 @@ begin
   exit(self.prop('id',vID));
 end;
 
+function eZElement.load():eZElement;
+var
+  _Data,
+    _ID,
+    _Path:string;
+  _FileStream:tFileStream;
+begin
+  _ID:=self.id();
+  if _ID<>'' then
+  begin
+    _Path:=includePath+'eZForm Resources\'+eZForm.getScriptName()+'\#'+_ID;
+    if fileExists(_Path) then
+    begin
+      try
+        _FileStream.init(_Path,$0000 or $0020);
+        setLength(_Data,_FileStream.getSize());
+        _FileStream.read(_Data[1],_FileStream.getSize());
+      finally
+        _FileStream.free();
+      end;
+      if execRegExpr('(checked|select|value)=',_Data) then
+      begin
+        _Data:=replaceRegExpr('(checked|select|value)=',_Data,'',false);
+        case self.__.getTag() of
+          eZTagCheckbox:self.checked(   strToBoolDef(_Data,false)   );
+          eZTagCombobox..eZTagEdit,eZTagMemo:self.value(_Data);
+          eZTagListbox:self.select(   strToIntDef(_Data,0)   );
+        end;
+      end;
+    end;
+  end;
+  exit(self);
+end;
+
 function eZElement.maxLength():int32;
 begin
   exit(self.prop('maxLength'));
@@ -857,6 +1090,16 @@ begin
   exit(self.prop('multiple',vMultiple));
 end;
 
+function eZElement.offsetBottom():int32;
+begin
+  exit(self.prop('offsetBottom'));
+end;
+
+function eZElement.offsetBottom(vOffsetBottom:int32):eZElement;overload;
+begin
+  exit(self.prop('offsetBottom',vOffsetBottom));
+end;
+
 function eZElement.offsetLeft():int32;
 begin
   exit(self.prop('offsetLeft'));
@@ -865,6 +1108,16 @@ end;
 function eZElement.offsetLeft(vOffsetLeft:int32):eZElement;overload;
 begin
   exit(self.prop('offsetLeft',vOffsetLeft));
+end;
+
+function eZElement.offsetRight():int32;
+begin
+  exit(self.prop('offsetRight'));
+end;
+
+function eZElement.offsetRight(vOffsetRight:int32):eZElement;overload;
+begin
+  exit(self.prop('offsetRight',vOffsetRight));
 end;
 
 function eZElement.offsetTop():int32;
@@ -933,6 +1186,27 @@ begin
   exit(self.prop('password',vPassword));
 end;
 
+function eZElement.paste():eZElement;
+begin
+  case self.__.getTag() of
+    eZTagEdit,eZTagMemo:tEdit(self.__).pasteFromClipboard();
+  end;
+  exit(self);
+end;
+
+function eZElement.position():tPoint;
+begin
+  result:=[self.offsetLeft(),self.offsetTop()];
+  exit(result);
+end;
+
+function eZElement.position(vPosition:tPoint):eZElement;overload;
+begin
+  self.offsetLeft(vPosition.x);
+  self.offsetLeft(vPosition.y);
+  exit(self);
+end;
+
 function eZElement.prop(vProperty:string):variant;
 var
   _Font:tFont;
@@ -959,7 +1233,7 @@ begin
       'height':
         case self.__.getTag() of
           eZTagButton..eZTagProgressbar,eZTagTabList:result:=tButton(self.__).getHeight();
-          eZTagTab:result:=tTabSheet(self.__).getParent().getHeight();
+          eZTagTab:result:=self.parent().height();
         end;
       'id':
         case self.__.getTag() of
@@ -974,15 +1248,25 @@ begin
           eZTagMemo:result:=tMemo(self.__).getWantReturns();
           eZTagTabList:tPageControl(self.__).getMultiLine();
         end;
+      'offsetbottom':
+        case self.__.getTag() of
+          eZTagButton..eZTagProgressbar,eZTagTabList:result:=self.offsetTop()+self.height();
+          eZTagTab:result:=self.parent().offsetBottom();
+        end;
       'offsetleft':
         case self.__.getTag() of
           eZTagButton..eZTagProgressbar,eZTagTabList:result:=tButton(self.__).getLeft();
-          eZTagTab:result:=tTabSheet(self.__).getParent().getLeft();
+          eZTagTab:result:=self.parent().offsetLeft();
+        end;
+      'offsetright':
+        case self.__.getTag() of
+          eZTagButton..eZTagProgressbar,eZTagTabList:result:=self.offsetLeft()+self.width();
+          eZTagTab:result:=self.parent().offsetRight();
         end;
       'offsettop':
         case self.__.getTag() of
           eZTagButton..eZTagProgressbar,eZTagTabList:result:=tButton(self.__).getTop();
-          eZTagTab:result:=tTabSheet(self.__).getParent().getTop();
+          eZTagTab:result:=self.parent().offsetTop();
         end;
       'password':
         case self.__.getTag() of
@@ -1005,7 +1289,7 @@ begin
       begin
         case self.__.getTag() of
           eZTagButton..eZTagGroupbox,eZTagLabel..eZTagMemo,eZTagTabList:_Font:=tButton(self.__).getFont();
-          eZTagTab:_Font:=tTabSheet(self.__).getParent().getFont();
+          eZTagTab:result:=self.parent().style();
         end;
         if _Font then
         begin
@@ -1063,7 +1347,7 @@ begin
       'width':
         case self.__.getTag() of
           eZTagButton..eZTagProgressbar,eZTagTabList:result:=tButton(self.__).getWidth();
-          eZTagTab:result:=tTabSheet(self.__).getParent().getWidth();
+          eZTagTab:result:=self.parent().width();
         end;
     end;
   exit(result);
@@ -1099,7 +1383,7 @@ begin
         if varType(vValue)=varInteger then
           case self.__.getTag() of
             eZTagButton,eZTagGroupbox..eZTagImage,eZTagListbox..eZTagProgressbar,eZTagTabList:tButton(self.__).setHeight(vValue);
-            eZTagTab:tTabSheet(self.__).getParent().setHeight(vValue);
+            eZTagTab:self.parent().height(vValue);
           end;
       'id':
         if varType(vValue)=varString then
@@ -1117,17 +1401,33 @@ begin
             eZTagMemo:tMemo(self.__).setWantReturns(vValue);
             eZTagTabList:tPageControl(self.__).setMultiLine(vValue);
           end;
+      'offsetbottom':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagButton..eZTagProgressbar,eZTagTabList:
+              if vValue>self.offsetTop() then
+                self.height(vValue-self.offsetTop());
+            eZTagTab:self.parent().offsetBottom(vValue);
+          end;
       'offsetleft':
         if varType(vValue)=varInteger then
           case self.__.getTag() of
             eZTagButton..eZTagProgressbar,eZTagTabList:tButton(self.__).setLeft(vValue);
-            eZTagTab:tTabSheet(self.__).getParent().setLeft(vValue);
+            eZTagTab:self.parent().offsetLeft(vValue);
+          end;
+      'offsetright':
+        if varType(vValue)=varInteger then
+          case self.__.getTag() of
+            eZTagButton..eZTagProgressbar,eZTagTabList:
+              if vValue>self.offsetLeft() then
+                self.width(vValue-self.offsetLeft());
+            eZTagTab:self.parent().offsetRight(vValue);
           end;
       'offsettop':
         if varType(vValue)=varInteger then
           case self.__.getTag() of
             eZTagButton..eZTagProgressbar,eZTagTabList:tButton(self.__).setTop(vValue);
-            eZTagTab:tTabSheet(self.__).getParent().setTop(vValue);
+            eZTagTab:self.parent().offsetTop(vValue);
           end;
       'password':
         if varType(vValue)=varBoolean then
@@ -1230,7 +1530,7 @@ begin
         if varType(vValue)=varInteger then
           case self.__.getTag() of
             eZTagButton..eZTagProgressbar,eZTagTabList:tButton(self.__).setWidth(vValue);
-            eZTagTab:tTabSheet(self.__).getParent().setWidth(vValue);
+            eZTagTab:self.parent().width(vValue);
           end;
     end;
   exit(self);
@@ -1257,6 +1557,38 @@ end;
 function eZElement.readOnly(vReadOnly:boolean):eZElement;overload;
 begin
   exit(self.prop('readOnly',vReadOnly));
+end;
+
+function eZElement.save():eZElement;
+var
+  _Data,
+    _ID,
+    _Path:string;
+  _FileStream:tFileStream
+begin
+  _ID:=self.id();
+  if _ID<>'' then
+  begin
+    _Path:=includePath+'eZForm Resources\'+eZForm.getScriptName()+'\#'+_ID;
+    createDirectory(includePath+'eZForm Resources\'+eZForm.getScriptName());
+    if directoryExists(includePath+'eZForm Resources\'+eZForm.getScriptName()) then
+    begin
+      case self.__.getTag() of
+        eZTagCheckbox:_Data:='checked='+toStr(self.checked());
+        eZTagCombobox..eZTagEdit,eZTagMemo:_Data:='value='+self.value();
+        eZTagListbox:_Data:='select='+toStr(self.select());
+      end;
+      writeLN(_Data);
+      if _Data<>'' then
+        try
+          _FileStream.init(_Path,$ff00 or $0001 or $0020);
+          _FileStream.WriteBuffer(_Data[1],length(_Data));
+        finally
+          _FileStream.free();
+        end;
+    end;
+  end;
+  exit(self);
 end;
 
 function eZElement.select():int32;
@@ -1494,6 +1826,34 @@ begin
   exit(result);
 end;
 
+function eZElementArray.find(vSelector:string):eZElementArray;overload;
+var
+  _Index,
+    _ResultIndex:int32;
+begin
+  setLength(result,length(self));
+  if execRegExpr('^#[\w-]+$',vSelector:=lowercase(vSelector)) then
+  begin
+    vSelector:=replaceRegExpr('^#([\w-]+)$',vSelector,'$1',true);
+    for _Index to high(self) do
+      if lowercase(self[_Index].id())=vSelector then
+      begin
+        result[0]:=self[_Index];
+        _ResultIndex:=1;
+        break;
+      end;
+  end
+  else if execRegExpr('^[A-z]+$',vSelector) then
+    for _Index to high(self) do
+      if self[_Index].tagName()=vSelector then
+      begin
+        result[_ResultIndex]:=self[_Index];
+        _ResultIndex+=1;
+      end;
+  setLength(result,_ResultIndex);
+  exit(result);
+end;
+
 function eZElementArray.first():eZElement;
 begin
   if length(self) then
@@ -1536,6 +1896,15 @@ begin
   exit(result);
 end;
 
+function eZElementArray.load():eZElementArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].load();
+  exit(self);
+end;
+
 function eZElementArray.parent(vElement:eZElement):eZElementArray;
 var
   _Index:int32;
@@ -1569,6 +1938,15 @@ var
 begin
   for _Index to high(self) do
     self[_Index].prop(vProperty);
+  exit(self);
+end;
+
+function eZElementArray.save():eZElementArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].save();
   exit(self);
 end;
 
@@ -1666,7 +2044,7 @@ begin
       _Socket.setURL(vURL);
       _Socket.doGet(_Response);
       try
-        _FileStream.init(_Path,$FF00 or $0001 or $0020);
+        _FileStream.init(_Path,$ff00 or $0001 or $0020);
         _FileStream.WriteBuffer(toString(_Response)[1],_Response.size);
       finally
         _FileStream.free();
@@ -1681,4 +2059,9 @@ begin
       deleteFile(_Path);
     end;
   end;
+end;
+
+function toProcedure(vProcedure:string):procedure();
+begin
+  exit(getGlobalPtr(vProcedure)^);
 end;
