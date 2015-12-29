@@ -1131,24 +1131,8 @@ begin
 end;
 
 function eZElement.parent():eZElement;
-var
-  _ElementIndex,
-    _FormIndex:int32;
-  _Form:tForm;
 begin
-  _Form:=self.__.getForm();
-  for _FormIndex to high(__eZFormArray) do
-    if _Form=__eZFormArray[_FormIndex].__ then
-    begin
-      for _ElementIndex to high(__eZFormArray[_FormIndex].___) do
-        if self.__=__eZFormArray[_FormIndex].___[_ElementIndex].__ then
-        begin
-          result:=__eZFormArray[_FormIndex].___[_ElementIndex];
-          break;
-        end;
-      break;
-    end;
-  exit(result);
+  exit(eZElement(tButton(self.__).getParent()));
 end;
 
 function eZElement.parent(vElement:eZElement):eZElement;overload;
@@ -1520,7 +1504,7 @@ begin
       'visible':
         if varType(vValue)=varBoolean then
           case self.__.getTag() of
-            eZTagButton..eZTagProgressbar,eZTagTabList:
+            eZTagButton..eZTagTabList:
               if vValue then
                 tButton(self.__).show()
               else
@@ -1578,7 +1562,6 @@ begin
         eZTagCombobox..eZTagEdit,eZTagMemo:_Data:='value='+self.value();
         eZTagListbox:_Data:='select='+toStr(self.select());
       end;
-      writeLN(_Data);
       if _Data<>'' then
         try
           _FileStream.init(_Path,$ff00 or $0001 or $0020);
@@ -2000,11 +1983,16 @@ end;
 *)
 
 function tComponent.getForm():tComponent;
+var
+  _Owner:tComponent;
 begin
-  if self.getOwner()<>nil then
-    result:=self.getOwner().getForm()
-  else
-    result:=self;
+  _Owner:=self;
+  while result=nil do
+  begin
+    _Owner:=tControl(_Owner).getParent();
+    if eZElement(_Owner).tagName()='form' then
+      result:=_Owner;
+  end;
   exit(result);
 end;
 
