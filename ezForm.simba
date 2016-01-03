@@ -91,22 +91,22 @@ end;
   eZForm Methods
 *)
 
-function eZForm.addButton(vCaption,vStyle,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):eZElement;
+function eZForm.addButton(vCaption,vStyle,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()=nil):eZElement;
 begin
   exit(self.addElement('button',vCaption,vStyle,vID,vPosition,vDimensions,@vEventHandler));
 end;
 
-function eZForm.addCheckbox(vCaption,vStyle,vID:string;vPosition:tPoint;vEventHandler:procedure()):eZElement;
+function eZForm.addCheckbox(vCaption,vStyle,vID:string;vPosition:tPoint;vEventHandler:procedure()=nil):eZElement;
 begin
   exit(self.addElement('checkbox',vCaption,vStyle,vID,vPosition,[0,0],@vEventHandler));
 end;
 
-function eZForm.addCombobox(vCaption:tStringArray;vStyle,vID:string;vPosition:tPoint;vWidth:int32;vEventHandler:procedure()):eZElement;
+function eZForm.addCombobox(vCaption:tStringArray;vStyle,vID:string;vPosition:tPoint;vWidth:int32;vEventHandler:procedure()=nil):eZElement;
 begin
   exit(self.addElement('combobox',implode('|',vCaption),vStyle,vID,vPosition,[vWidth,0],@vEventHandler));
 end;
 
-function eZForm.addEdit(vCaption,vStyle,vID:string;vPosition:tPoint;vWidth:int32;vEventHandler:procedure()):eZElement;
+function eZForm.addEdit(vCaption,vStyle,vID:string;vPosition:tPoint;vWidth:int32;vEventHandler:procedure()=nil):eZElement;
 begin
   exit(self.addElement('edit',vCaption,vStyle,vID,vPosition,[vWidth,0],@vEventHandler));
 end;
@@ -116,7 +116,7 @@ begin
   exit(self.addElement('groupbox',vCaption,vStyle,vID,vPosition,vDimensions,nil));
 end;
 
-function eZForm.addImage(vFilePath,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):eZElement;
+function eZForm.addImage(vFilePath,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()=nil):eZElement;
 begin
   exit(self.addElement('image',vFilePath,'',vID,vPosition,vDimensions,@vEventHandler));
 end;
@@ -126,12 +126,12 @@ begin
   exit(self.addElement('label',vCaption,vStyle,vID,vPosition,[0,0],nil));
 end;
 
-function eZForm.addListbox(vCaption:tStringArray;vStyle,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):eZElement;
+function eZForm.addListbox(vCaption:tStringArray;vStyle,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()=nil):eZElement;
 begin
   exit(self.addElement('listbox',implode('|',vCaption),vStyle,vID,vPosition,vDimensions,@vEventHandler));
 end;
 
-function eZForm.addMemo(vCaption,vStyle,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):eZElement;
+function eZForm.addMemo(vCaption,vStyle,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()=nil):eZElement;
 begin
   exit(self.addElement('memo',vCaption,vStyle,vID,vPosition,vDimensions,@vEventHandler));
 end;
@@ -141,7 +141,7 @@ begin
   exit(self.addElement('progressbar',toStr(vValue),'',vID,vPosition,vDimensions,nil));
 end;
 
-function eZForm.addTab(vCaption:tStringArray;vStyle,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()):eZElement;
+function eZForm.addTab(vCaption:tStringArray;vStyle,vID:string;vPosition:tPoint;vDimensions:array[0..1] of int32;vEventHandler:procedure()=nil):eZElement;
 begin
   exit(self.addElement('tab',implode('|',vCaption),vStyle,vID,vPosition,vDimensions,@vEventHandler));
 end;
@@ -449,8 +449,6 @@ begin
     end;
 end;
 
-
-
 function eZForm.animate(vProperty:string;vValue,vTimeout:int32):eZForm;
 var
   _Difference,
@@ -497,6 +495,29 @@ begin
   end;
 
   exit(self);
+end;
+
+function eZForm.children():eZElementArray;
+var
+  _ElementIndex,
+    _FormIndex,
+    _ResultIndex:int32;
+  _Form:tForm;
+begin
+  for _FormIndex to high(__eZFormArray) do
+    if self.__=__eZFormArray[_FormIndex].__ then
+    begin
+      setLength(result,length(__eZFormArray[_FormIndex].___));
+      for _ElementIndex to high(__eZFormArray[_FormIndex].___) do
+        if self.__=__eZFormArray[_FormIndex].___[_ElementIndex].parent().__ then
+        begin
+          result[_ResultIndex]:=__eZFormArray[_FormIndex].___[_ElementIndex];
+          _ResultIndex+=1;
+        end;
+      setLength(result,_ResultIndex);
+      break;
+    end;
+  exit(result);
 end;
 
 function eZForm.create(vTitle:string=''):eZForm;
@@ -914,7 +935,6 @@ var
     _FormIndex,
     _ResultIndex:int32;
   _Form:tForm;
-
 begin
   _Form:=self.__.getForm();
   for _FormIndex to high(__eZFormArray) do
@@ -922,7 +942,7 @@ begin
     begin
       setLength(result,length(__eZFormArray[_FormIndex].___));
       for _ElementIndex to high(__eZFormArray[_FormIndex].___) do
-        if self.__=tButton(__eZFormArray[_FormIndex].___[_ElementIndex].__).getParent() then
+        if self.__=__eZFormArray[_FormIndex].___[_ElementIndex].parent().__ then
         begin
           result[_ResultIndex]:=__eZFormArray[_FormIndex].___[_ElementIndex];
           _ResultIndex+=1;
@@ -946,6 +966,11 @@ end;
 function eZElement.cols():int32;
 begin
   exit(self.prop('cols'));
+end;
+
+function eZElement.cols(vCols:int32):eZElement;overload;
+begin
+  exit(self.prop('cols',vCols));
 end;
 
 function eZElement.copy():eZElement;
