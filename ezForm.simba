@@ -1003,6 +1003,7 @@ function eZElement.empty():eZElement;
 begin
   case self.__.getTag() of
     eZTagCombobox:tCombobox(self.__).clear();
+    eZTagEdit,eZTagMemo:tEdit(self.__).clear();
     eZTagListbox:tListbox(self.__).clear();
   end;
   exit(self);
@@ -1502,6 +1503,7 @@ begin
         if (varType(vValue)=varInteger) or (varType(vValue)=varString) then
           case self.__.getTag() of
             eZTagButton..eZTagCheckbox,eZTagGroupbox,eZTagLabel,eZTagTab:tButton(self.__).setCaption(toStr(vValue));
+            eZTagEdit,eZTagMemo:tEdit(self.__).setText(toStr(vValue));
             eZTagListBox:tListBox(self.__).getItems().setStrings(tListBox(self.__).getItemIndex(),vValue);
             eZTagTabList:tPageControl(self.__).getActivePage().setCaption(vValue);
           end;
@@ -1663,17 +1665,17 @@ end;
 function eZElement.selections(vValues:tStringArray):eZElement;overload;
 var
   _Index:int32;
-  _Strings:tStrings;
+  _Strings:tStringList;
 begin
   case self.__.getTag() of
-    eZTagCombobox:_Strings:=tCombobox(self.__).getItems();
-    eZTagListbox:_Strings:=tListbox(self.__).getItems();
+    eZTagCombobox,eZTagListbox:_Strings.init();
   end;
   if _Strings<>nil then
   begin
-    _Strings.clear();
     for _Index to high(vValues) do
       _Strings.append(vValues[_Index]);
+    tCombobox(self.__).setItems(_Strings);
+    _Strings.free();
   end;
   exit(result);
 end;
@@ -1949,6 +1951,15 @@ begin
   exit(self);
 end;
 
+function eZElementArray.readOnly(vReadOnly:boolean):eZElementArray;
+var
+  _Index:int32;
+begin
+  for _Index to high(self) do
+    self[_Index].readOnly(vReadOnly);
+  exit(self);
+end;
+
 function eZElementArray.save():eZElementArray;
 var
   _Index:int32;
@@ -2073,6 +2084,24 @@ begin
     end;
   end;
 end;
+
+(*
+  tStringArray Methods
+*)
+
+function tStringArray.strings():tStringList;
+var _Index:int32;
+begin
+  with result do
+  begin
+    init();
+    for _Index to high(self) do
+      append(self[_Index]);
+  end;
+  exit(result);
+end;
+
+
 
 function toProcedure(vProcedure:string):procedure();
 begin
